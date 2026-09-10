@@ -46,6 +46,7 @@ export const MeetingRoomPage: React.FC = () => {
   // WebRTC Mesh & Media State
   const {
     localStream,
+    screenStream,
     remoteStreams,
     connectionQualities,
     remoteMediaStates,
@@ -171,7 +172,7 @@ export const MeetingRoomPage: React.FC = () => {
   const localParticipantData: ParticipantMediaData = {
     id: user?.id || 'local',
     name: user?.name || 'You',
-    stream: localStream,
+    stream: isScreenSharing && screenStream ? screenStream : localStream,
     isLocal: true,
     isMuted: isAudioMuted,
     isVideoOff: isVideoOff,

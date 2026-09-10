@@ -38,7 +38,7 @@ export const VideoTile: React.FC<VideoTileProps> = ({
     stream &&
     stream.getVideoTracks().length > 0 &&
     stream.getVideoTracks()[0].enabled &&
-    !isVideoOff
+    (isScreenSharing || !isVideoOff)
   );
 
   const getQualityBadge = () => {

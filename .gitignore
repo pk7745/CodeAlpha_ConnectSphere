@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 .pnp
 .pnp.js
@@ -29,6 +29,7 @@ server/uploads/*
 !server/uploads/.gitkeep
 temp/
 tmp/
+server/temp_chrome_*/
 
 # OS & IDE
 .DS_Store

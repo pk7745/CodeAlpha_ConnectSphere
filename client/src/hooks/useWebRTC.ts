@@ -10,6 +10,7 @@ export interface RemoteMediaState {
 
 export interface UseWebRTCReturn {
   localStream: MediaStream | null;
+  screenStream: MediaStream | null;
   remoteStreams: Map<string, MediaStream>;
   connectionQualities: Map<string, ConnectionQuality>;
   remoteMediaStates: Map<string, RemoteMediaState>;
@@ -37,6 +38,7 @@ export function useWebRTC(
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
   const screenStreamRef = useRef<MediaStream | null>(null);
@@ -188,6 +190,7 @@ export function useWebRTC(
       screenStreamRef.current = null;
     }
 
+    setScreenStream(null);
     setIsScreenSharing(false);
 
     // Restore original camera track on peers
@@ -216,13 +219,14 @@ export function useWebRTC(
         return;
       }
 
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: false,
       });
 
-      screenStreamRef.current = screenStream;
-      const screenTrack = screenStream.getVideoTracks()[0];
+      screenStreamRef.current = stream;
+      setScreenStream(stream);
+      const screenTrack = stream.getVideoTracks()[0];
 
       // Handle user ending screen share via browser stop button
       screenTrack.onended = () => {
@@ -258,6 +262,7 @@ export function useWebRTC(
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
+      setScreenStream(null);
     }
     peerConnectionManager.closeAll();
     setRemoteStreams(new Map());
@@ -366,6 +371,7 @@ export function useWebRTC(
 
   return {
     localStream,
+    screenStream,
     remoteStreams,
     connectionQualities,
     remoteMediaStates,

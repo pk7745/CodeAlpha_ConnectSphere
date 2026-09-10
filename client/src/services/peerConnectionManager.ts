@@ -20,11 +20,34 @@ export class PeerConnectionManager {
   private remoteStreams = new Map<string, MediaStream>();
   private videoSenders = new Map<string, RTCRtpSender>();
   private statsIntervals = new Map<string, any>();
+  private lastStats = new Map<string, { packetsLost: number; packetsReceived: number }>();
   private localStream: MediaStream | null = null;
   private pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
 
   public setLocalStream(stream: MediaStream | null) {
     this.localStream = stream;
+    if (stream) {
+      // Synchronize local tracks across all existing peer connections
+      for (const [userId, peer] of this.peers.entries()) {
+        const senders = peer.getSenders();
+        stream.getTracks().forEach((track) => {
+          const existingSender = senders.find(
+            (s) => s.track?.kind === track.kind || (!s.track && (s as any).kind === track.kind)
+          );
+          if (existingSender) {
+            existingSender.replaceTrack(track).catch(() => {});
+            if (track.kind === 'video') {
+              this.videoSenders.set(userId, existingSender);
+            }
+          } else {
+            const sender = peer.addTrack(track, stream);
+            if (track.kind === 'video') {
+              this.videoSenders.set(userId, sender);
+            }
+          }
+        });
+      }
+    }
   }
 
   public getLocalStream(): MediaStream | null {
@@ -45,15 +68,16 @@ export class PeerConnectionManager {
 
   public createPeerConnection(
     userId: string,
-    callbacks: PeerCallbacks
+    callbacks: PeerCallbacks,
+    preservePendingCandidates: boolean = false
   ): RTCPeerConnection {
-    // Close existing if present
-    this.closePeer(userId);
+    // Close existing connection if present (preserves queued candidates if an offer was received)
+    this.closePeer(userId, preservePendingCandidates);
 
     const peer = new RTCPeerConnection(ICE_CONFIG);
     this.peers.set(userId, peer);
 
-    // Add local tracks to this peer
+    // Add local tracks to this peer if localStream is available
     if (this.localStream) {
       this.localStream.getTracks().forEach((track) => {
         const sender = peer.addTrack(track, this.localStream!);
@@ -61,6 +85,11 @@ export class PeerConnectionManager {
           this.videoSenders.set(userId, sender);
         }
       });
+    } else {
+      // If localStream is still initializing, reserve transceivers so SDP negotiation reserves m-lines
+      peer.addTransceiver('audio', { direction: 'sendrecv' });
+      const videoTransceiver = peer.addTransceiver('video', { direction: 'sendrecv' });
+      this.videoSenders.set(userId, videoTransceiver.sender);
     }
 
     // Handle incoming remote media tracks
@@ -103,7 +132,18 @@ export class PeerConnectionManager {
     userId: string,
     callbacks: PeerCallbacks
   ): Promise<RTCSessionDescriptionInit> {
-    const peer = this.createPeerConnection(userId, callbacks);
+    const existing = this.peers.get(userId);
+    if (existing && existing.connectionState === 'connected' && existing.signalingState === 'stable') {
+      // Connection already active and stable; create renegotiation offer
+      const offer = await existing.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+      await existing.setLocalDescription(offer);
+      return offer;
+    }
+
+    const peer = this.createPeerConnection(userId, callbacks, false);
     const offer = await peer.createOffer({
       offerToReceiveAudio: true,
       offerToReceiveVideo: true,
@@ -117,7 +157,8 @@ export class PeerConnectionManager {
     sdp: RTCSessionDescriptionInit,
     callbacks: PeerCallbacks
   ): Promise<RTCSessionDescriptionInit> {
-    const peer = this.createPeerConnection(userId, callbacks);
+    // Preserve any early ICE candidates that arrived before the offer was processed
+    const peer = this.createPeerConnection(userId, callbacks, true);
     await peer.setRemoteDescription(new RTCSessionDescription(sdp));
 
     // Process queued candidates
@@ -161,9 +202,16 @@ export class PeerConnectionManager {
   }
 
   public async replaceVideoTrack(newTrack: MediaStreamTrack | null): Promise<void> {
-    for (const [userId, sender] of this.videoSenders.entries()) {
+    for (const [userId, peer] of this.peers.entries()) {
       try {
-        await sender.replaceTrack(newTrack);
+        let sender = this.videoSenders.get(userId);
+        if (!sender) {
+          sender = peer.getSenders().find((s) => s.track?.kind === 'video' || (s as any).kind === 'video');
+          if (sender) this.videoSenders.set(userId, sender);
+        }
+        if (sender) {
+          await sender.replaceTrack(newTrack);
+        }
       } catch (err) {
         console.warn(`[PeerConnectionManager] Failed to replace video track for ${userId}:`, err);
       }
@@ -209,8 +257,18 @@ export class PeerConnectionManager {
           return;
         }
 
-        const totalPackets = packetsLost + packetsReceived;
-        const lossRate = totalPackets > 0 ? (packetsLost / totalPackets) * 100 : 0;
+        // Calculate delta packet loss over the sampling window (avoids cumulative distortion)
+        const prev = this.lastStats.get(userId);
+        let deltaLost = packetsLost;
+        let deltaReceived = packetsReceived;
+        if (prev) {
+          deltaLost = Math.max(0, packetsLost - prev.packetsLost);
+          deltaReceived = Math.max(0, packetsReceived - prev.packetsReceived);
+        }
+        this.lastStats.set(userId, { packetsLost, packetsReceived });
+
+        const deltaTotal = deltaLost + deltaReceived;
+        const lossRate = deltaTotal > 0 ? (deltaLost / deltaTotal) * 100 : 0;
 
         if (rtt < 120 && lossRate < 2) {
           onQualityChange(userId, 'Excellent');
@@ -220,14 +278,14 @@ export class PeerConnectionManager {
           onQualityChange(userId, 'Poor');
         }
       } catch {
-        // Fallback
+        // Safe fallback
       }
     }, 3000);
 
     this.statsIntervals.set(userId, interval);
   }
 
-  public closePeer(userId: string) {
+  public closePeer(userId: string, preservePendingCandidates: boolean = false) {
     const interval = this.statsIntervals.get(userId);
     if (interval) {
       clearInterval(interval);
@@ -245,16 +303,22 @@ export class PeerConnectionManager {
 
     this.videoSenders.delete(userId);
     this.remoteStreams.delete(userId);
-    this.pendingCandidates.delete(userId);
+    this.lastStats.delete(userId);
+
+    if (!preservePendingCandidates) {
+      this.pendingCandidates.delete(userId);
+    }
   }
 
   public closeAll() {
-    for (const userId of this.peers.keys()) {
-      this.closePeer(userId);
+    for (const userId of Array.from(this.peers.keys())) {
+      this.closePeer(userId, false);
     }
     this.localStream = null;
     this.remoteStreams.clear();
     this.videoSenders.clear();
+    this.lastStats.clear();
+    this.pendingCandidates.clear();
   }
 }
 

@@ -13,7 +13,8 @@
     "test:auth": "node test-auth.js",
     "test:meeting": "node test-meeting.js",
     "test:socket": "node test-socket.js",
-    "test:webrtc": "node test-webrtc.js"
+    "test:webrtc": "node test-webrtc.js",
+    "test:browser": "node test-browser-e2e.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
