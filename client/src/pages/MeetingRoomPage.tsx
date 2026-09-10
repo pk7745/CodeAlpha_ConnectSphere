@@ -7,6 +7,8 @@ import { Navbar } from '../components/common/Navbar';
 import { PreJoinModal } from '../components/meeting/PreJoinModal';
 import { VideoGrid, ParticipantMediaData } from '../components/meeting/VideoGrid';
 import { MeetingControls } from '../components/meeting/MeetingControls';
+import { WorkspaceDrawer, WorkspaceTab } from '../components/collaboration/WorkspaceDrawer';
+import { WhiteboardModal } from '../components/collaboration/WhiteboardModal';
 import {
   Copy,
   Check,
@@ -62,8 +64,10 @@ export const MeetingRoomPage: React.FC = () => {
   } = useWebRTC(roomCode, user?.id);
 
   const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
-  const [showParticipantsPanel, setShowParticipantsPanel] = useState(true);
-  const [showChat, setShowChat] = useState(false);
+  const [showParticipantsPanel, setShowParticipantsPanel] = useState(false);
+  const [showWorkspace, setShowWorkspace] = useState(false);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('chat');
   const [copied, setCopied] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
 
@@ -411,6 +415,20 @@ export const MeetingRoomPage: React.FC = () => {
                 </div>
               </aside>
             )}
+
+            {/* Collapsible Smart Workspace Drawer */}
+            {showWorkspace && (
+              <WorkspaceDrawer
+                isOpen={showWorkspace}
+                onClose={() => setShowWorkspace(false)}
+                defaultTab={workspaceTab}
+                meetingId={meeting?.id || ''}
+                roomCode={roomCode || ''}
+                currentUserId={user?.id || ''}
+                isHost={isHost}
+                onOpenWhiteboard={() => setShowWhiteboard(true)}
+              />
+            )}
           </div>
         )}
 
@@ -424,12 +442,22 @@ export const MeetingRoomPage: React.FC = () => {
               isHost={isHost}
               participantCount={participants.length}
               showParticipants={showParticipantsPanel}
-              showChat={showChat}
+              showChat={showWorkspace && workspaceTab === 'chat'}
+              showWorkspace={showWorkspace}
               onToggleAudio={toggleAudio}
               onToggleVideo={toggleVideo}
               onToggleScreenShare={toggleScreenShare}
               onToggleParticipants={() => setShowParticipantsPanel((prev) => !prev)}
-              onToggleChat={() => setShowChat((prev) => !prev)}
+              onToggleChat={() => {
+                if (showWorkspace && workspaceTab === 'chat') {
+                  setShowWorkspace(false);
+                } else {
+                  setShowWorkspace(true);
+                  setWorkspaceTab('chat');
+                }
+              }}
+              onToggleWorkspace={() => setShowWorkspace((prev) => !prev)}
+              onOpenWhiteboard={() => setShowWhiteboard(true)}
               onLeaveMeeting={handleLeave}
               onEndMeeting={handleEnd}
               isEnding={isEnding}
@@ -437,6 +465,15 @@ export const MeetingRoomPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Collaborative Whiteboard Fullscreen Modal */}
+      <WhiteboardModal
+        isOpen={showWhiteboard}
+        onClose={() => setShowWhiteboard(false)}
+        meetingId={meeting?.id || ''}
+        roomCode={roomCode || ''}
+        currentUserId={user?.id || ''}
+      />
 
       {/* Meeting Concluded Modal */}
       {meetingEnded && (

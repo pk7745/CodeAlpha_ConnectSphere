@@ -17,6 +17,8 @@ export type AppSocketServer = SocketIOServer<
   SocketData
 >;
 
+let ioInstance: AppSocketServer | null = null;
+
 export function initSocketServer(server: http.Server): AppSocketServer {
   const io: AppSocketServer = new SocketIOServer(server, {
     cors: {
@@ -36,5 +38,10 @@ export function initSocketServer(server: http.Server): AppSocketServer {
     registerMeetingHandlers(io, socket);
   });
 
+  ioInstance = io;
   return io;
+}
+
+export function getSocketServer(): AppSocketServer | null {
+  return ioInstance;
 }

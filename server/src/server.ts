@@ -6,6 +6,8 @@ import { config } from './config';
 import healthRoutes from './routes/healthRoutes';
 import authRoutes from './routes/authRoutes';
 import meetingRoutes from './routes/meetingRoutes';
+import fileRoutes from './routes/fileRoutes';
+import collaborationRoutes from './routes/collaborationRoutes';
 import { initSocketServer } from './socket';
 
 const app = express();
@@ -28,6 +30,8 @@ app.use('/uploads', express.static(config.uploadDir));
 // Routes
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/meetings', fileRoutes);
+app.use('/api/meetings', collaborationRoutes);
 app.use('/api/meetings', meetingRoutes);
 
 // Socket.IO Server Initialization

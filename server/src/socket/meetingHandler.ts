@@ -347,7 +347,184 @@ export function registerMeetingHandlers(io: TypedServer, socket: TypedSocket): v
     }
   });
 
-  // 9. Disconnect Handler
+  // 9. Real-Time Chat Message
+  socket.on('chat:send', async (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      const content = typeof payload?.content === 'string' ? payload.content.trim() : '';
+
+      if (!roomCode || !content) {
+        if (callback) callback({ success: false, error: 'Room code and message content are required' });
+        return;
+      }
+
+      if (content.length > 2000) {
+        if (callback) callback({ success: false, error: 'Message cannot exceed 2000 characters' });
+        return;
+      }
+
+      const participant = presenceManager.getParticipant(roomCode, user.id);
+      if (!participant) {
+        if (callback) callback({ success: false, error: 'You must be in the meeting to send messages' });
+        return;
+      }
+
+      const meetingId = socket.data.currentMeetingId || (await prisma.meeting.findUnique({ where: { roomCode }, select: { id: true } }))?.id;
+      if (!meetingId) {
+        if (callback) callback({ success: false, error: 'Meeting not found' });
+        return;
+      }
+
+      const message = await prisma.chatMessage.create({
+        data: {
+          meetingId,
+          senderId: user.id,
+          senderName: user.name,
+          content,
+        },
+      });
+
+      const messagePayload = {
+        id: message.id,
+        meetingId: message.meetingId,
+        senderId: message.senderId,
+        senderName: message.senderName,
+        content: message.content,
+        createdAt: message.createdAt.toISOString(),
+      };
+
+      io.to(roomCode).emit('chat:received', messagePayload);
+      if (callback) callback({ success: true, message: messagePayload });
+    } catch (error) {
+      console.error('[Socket chat:send] Error:', error);
+      if (callback) callback({ success: false, error: 'Failed to send message' });
+    }
+  });
+
+  // 10. Collaborative Whiteboard Drawing
+  socket.on('whiteboard:draw', (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && payload.stroke) {
+        socket.to(roomCode).emit('whiteboard:draw', {
+          stroke: payload.stroke,
+          senderUserId: user.id,
+        });
+      }
+    } catch (error) {
+      console.error('[Socket whiteboard:draw] Error:', error);
+    }
+  });
+
+  // 11. Whiteboard Clear
+  socket.on('whiteboard:clear', async (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode) {
+        const meetingId = socket.data.currentMeetingId || (await prisma.meeting.findUnique({ where: { roomCode }, select: { id: true } }))?.id;
+        if (meetingId) {
+          await prisma.whiteboardState.upsert({
+            where: { meetingId },
+            update: { strokesJson: '[]' },
+            create: { meetingId, strokesJson: '[]' },
+          });
+        }
+        io.to(roomCode).emit('whiteboard:clear');
+        if (callback) callback({ success: true });
+      }
+    } catch (error) {
+      console.error('[Socket whiteboard:clear] Error:', error);
+      if (callback) callback({ success: false });
+    }
+  });
+
+  // 12. Whiteboard Sync & Persistence
+  socket.on('whiteboard:sync', async (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && payload.strokesJson) {
+        const meetingId = socket.data.currentMeetingId || (await prisma.meeting.findUnique({ where: { roomCode }, select: { id: true } }))?.id;
+        if (meetingId) {
+          await prisma.whiteboardState.upsert({
+            where: { meetingId },
+            update: { strokesJson: payload.strokesJson },
+            create: { meetingId, strokesJson: payload.strokesJson },
+          });
+        }
+        socket.to(roomCode).emit('whiteboard:sync', {
+          strokesJson: payload.strokesJson,
+          senderUserId: user.id,
+        });
+        if (callback) callback({ success: true });
+      }
+    } catch (error) {
+      console.error('[Socket whiteboard:sync] Error:', error);
+      if (callback) callback({ success: false });
+    }
+  });
+
+  // 13. Meeting Note Update
+  socket.on('note:update', async (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && typeof payload.content === 'string') {
+        const meetingId = socket.data.currentMeetingId || (await prisma.meeting.findUnique({ where: { roomCode }, select: { id: true } }))?.id;
+        if (meetingId) {
+          await prisma.meetingNote.upsert({
+            where: { meetingId },
+            update: { content: payload.content },
+            create: { meetingId, content: payload.content },
+          });
+        }
+        socket.to(roomCode).emit('note:updated', {
+          content: payload.content,
+          updatedBy: user.name,
+        });
+        if (callback) callback({ success: true });
+      }
+    } catch (error) {
+      console.error('[Socket note:update] Error:', error);
+      if (callback) callback({ success: false });
+    }
+  });
+
+  // 14. Agenda Sync Trigger
+  socket.on('agenda:update', async (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode) {
+        const meeting = await prisma.meeting.findUnique({
+          where: { roomCode },
+          include: { agendaItems: { orderBy: { order: 'asc' } } },
+        });
+        if (meeting) {
+          io.to(roomCode).emit('agenda:updated', { items: meeting.agendaItems });
+        }
+      }
+    } catch (error) {
+      console.error('[Socket agenda:update] Error:', error);
+    }
+  });
+
+  // 15. Action Items Sync Trigger
+  socket.on('action:update', async (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode) {
+        const meeting = await prisma.meeting.findUnique({
+          where: { roomCode },
+          include: { actionItems: { orderBy: { createdAt: 'desc' } } },
+        });
+        if (meeting) {
+          io.to(roomCode).emit('action:updated', { items: meeting.actionItems });
+        }
+      }
+    } catch (error) {
+      console.error('[Socket action:update] Error:', error);
+    }
+  });
+
+  // 16. Disconnect Handler
   socket.on('disconnect', async () => {
     try {
       const roomCode = socket.data.currentRoomCode || presenceManager.getSocketRoom(socket.id);

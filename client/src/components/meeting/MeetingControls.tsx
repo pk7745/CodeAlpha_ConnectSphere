@@ -8,7 +8,8 @@ import {
   Users,
   PhoneOff,
   Square,
-  MessageSquare,
+  PenTool,
+  Layers,
 } from 'lucide-react';
 
 interface MeetingControlsProps {
@@ -19,11 +20,14 @@ interface MeetingControlsProps {
   participantCount: number;
   showParticipants: boolean;
   showChat?: boolean;
+  showWorkspace?: boolean;
   onToggleAudio: () => void;
   onToggleVideo: () => void;
   onToggleScreenShare: () => void;
   onToggleParticipants: () => void;
   onToggleChat?: () => void;
+  onToggleWorkspace?: () => void;
+  onOpenWhiteboard?: () => void;
   onLeaveMeeting: () => void;
   onEndMeeting?: () => void;
   isEnding?: boolean;
@@ -37,11 +41,14 @@ export const MeetingControls: React.FC<MeetingControlsProps> = ({
   participantCount,
   showParticipants,
   showChat = false,
+  showWorkspace = false,
   onToggleAudio,
   onToggleVideo,
   onToggleScreenShare,
   onToggleParticipants,
   onToggleChat,
+  onToggleWorkspace,
+  onOpenWhiteboard,
   onLeaveMeeting,
   onEndMeeting,
   isEnding = false,
@@ -126,20 +133,35 @@ export const MeetingControls: React.FC<MeetingControlsProps> = ({
         </span>
       </button>
 
-      {/* Chat Toggle / Placeholder */}
+      {/* Collaborative Whiteboard Button */}
+      {onOpenWhiteboard && (
+        <button
+          type="button"
+          onClick={onOpenWhiteboard}
+          aria-label="Open collaborative whiteboard"
+          className="p-2.5 sm:px-3 sm:py-2.5 rounded-2xl font-medium text-xs flex items-center gap-1.5 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-brand-300"
+          title="Open Collaborative Whiteboard"
+        >
+          <PenTool className="w-4 h-4" />
+          <span className="hidden lg:inline">Whiteboard</span>
+        </button>
+      )}
+
+      {/* Smart Workspace Toggle (Chat, Notes, Agenda, Files) */}
       <button
         type="button"
-        onClick={onToggleChat}
-        aria-label="Toggle chat panel"
-        aria-expanded={showChat}
+        onClick={onToggleWorkspace || onToggleChat}
+        aria-label="Toggle collaboration workspace"
+        aria-expanded={showWorkspace || showChat}
         className={`p-2.5 sm:px-3 sm:py-2.5 rounded-2xl font-medium text-xs flex items-center gap-1.5 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
-          showChat
-            ? 'bg-slate-700 text-white ring-1 ring-slate-500'
+          showWorkspace || showChat
+            ? 'bg-brand-600 text-white shadow-brand-600/20 ring-1 ring-brand-400'
             : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200'
         }`}
-        title={onToggleChat ? 'Toggle chat panel' : 'Chat (Coming in Phase 7)'}
+        title="Toggle Smart Workspace (Chat, Notes, Agenda, Files)"
       >
-        <MessageSquare className="w-4 h-4" />
+        <Layers className="w-4 h-4" />
+        <span className="hidden sm:inline">Workspace</span>
       </button>
 
       {/* Leave Meeting */}

@@ -9,11 +9,12 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "test": "node test-auth.js && node test-meeting.js && node test-socket.js && node test-webrtc.js",
+    "test": "node test-auth.js && node test-meeting.js && node test-socket.js && node test-webrtc.js && node test-collaboration.js",
     "test:auth": "node test-auth.js",
     "test:meeting": "node test-meeting.js",
     "test:socket": "node test-socket.js",
     "test:webrtc": "node test-webrtc.js",
+    "test:collab": "node test-collaboration.js",
     "test:browser": "node test-browser-e2e.js"
   },
   "dependencies": {
@@ -33,7 +34,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.9",
-    "@types/multer": "^1.4.12",
+    "@types/multer": "^1.4.13",
     "@types/node": "^22.13.5",
     "prisma": "^6.4.1",
     "socket.io-client": "^4.8.1",

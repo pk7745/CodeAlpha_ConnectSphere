@@ -41,6 +41,11 @@ export interface MediaStatePayload {
   screenSharing: boolean;
 }
 
+export interface ChatMessagePayload {
+  roomCode: string;
+  content: string;
+}
+
 export interface ClientToServerEvents {
   'meeting:join': (
     payload: { roomCode: string },
@@ -62,6 +67,18 @@ export interface ClientToServerEvents {
   'webrtc:answer': (payload: AnswerPayload, callback?: (res: { success: boolean; error?: string }) => void) => void;
   'webrtc:ice-candidate': (payload: IceCandidatePayload, callback?: (res: { success: boolean; error?: string }) => void) => void;
   'media:state-changed': (payload: MediaStatePayload) => void;
+
+  // Real-Time Collaboration Events (Phase 7)
+  'chat:send': (
+    payload: ChatMessagePayload,
+    callback?: (res: { success: boolean; message?: any; error?: string }) => void
+  ) => void;
+  'whiteboard:draw': (payload: { roomCode: string; stroke: any }) => void;
+  'whiteboard:clear': (payload: { roomCode: string }, callback?: (res: { success: boolean }) => void) => void;
+  'whiteboard:sync': (payload: { roomCode: string; strokesJson: string }, callback?: (res: { success: boolean }) => void) => void;
+  'note:update': (payload: { roomCode: string; content: string }, callback?: (res: { success: boolean }) => void) => void;
+  'agenda:update': (payload: { roomCode: string }) => void;
+  'action:update': (payload: { roomCode: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -76,6 +93,17 @@ export interface ServerToClientEvents {
   'webrtc:ice-candidate': (payload: { senderUserId: string; senderSocketId: string; candidate: any; roomCode: string }) => void;
   'media:state-changed': (payload: { userId: string; audioEnabled: boolean; videoEnabled: boolean; screenSharing: boolean; roomCode: string }) => void;
   'error': (payload: { message: string; code?: string }) => void;
+
+  // Real-Time Collaboration Events (Phase 7)
+  'chat:received': (message: { id: string; meetingId: string; senderId: string; senderName: string; content: string; createdAt: string }) => void;
+  'whiteboard:draw': (payload: { stroke: any; senderUserId: string }) => void;
+  'whiteboard:clear': () => void;
+  'whiteboard:sync': (payload: { strokesJson: string; senderUserId: string }) => void;
+  'note:updated': (payload: { content: string; updatedBy: string }) => void;
+  'agenda:updated': (payload: { items: any[] }) => void;
+  'action:updated': (payload: { items: any[] }) => void;
+  'file:shared': (file: any) => void;
+  'file:deleted': (payload: { fileId: string }) => void;
 }
 
 export interface InterServerEvents {}
