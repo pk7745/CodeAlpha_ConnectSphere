@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { Server as SocketIOServer } from 'socket.io';
 import { config } from './config';
 import healthRoutes from './routes/healthRoutes';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +26,7 @@ app.use('/uploads', express.static(config.uploadDir));
 
 // Routes
 app.use('/api', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 // Socket.IO setup
 export const io = new SocketIOServer(server, {
