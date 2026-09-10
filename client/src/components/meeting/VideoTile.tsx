@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { MicOff, VideoOff, Monitor, Crown, Wifi, WifiOff } from 'lucide-react';
+import { MicOff, VideoOff, Monitor, Crown, Wifi, WifiOff, Volume2 } from 'lucide-react';
 import { ConnectionQuality } from '../../services/peerConnectionManager';
+import { useAudioActivity } from '../../hooks/useAudioActivity';
 
 export interface VideoTileProps {
   stream: MediaStream | null;
@@ -10,6 +11,7 @@ export interface VideoTileProps {
   isVideoOff?: boolean;
   isScreenSharing?: boolean;
   isHost?: boolean;
+  isSpeaking?: boolean;
   quality?: ConnectionQuality;
   className?: string;
 }
@@ -22,10 +24,15 @@ export const VideoTile: React.FC<VideoTileProps> = ({
   isVideoOff = false,
   isScreenSharing = false,
   isHost = false,
+  isSpeaking: externalIsSpeaking,
   quality,
   className = '',
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Measure audio activity directly from the stream
+  const { isSpeaking: internalIsSpeaking } = useAudioActivity(stream, isMuted);
+  const isSpeaking = externalIsSpeaking !== undefined ? externalIsSpeaking : internalIsSpeaking;
 
   useEffect(() => {
     if (videoRef.current) {
@@ -102,7 +109,11 @@ export const VideoTile: React.FC<VideoTileProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full min-h-[220px] bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-800 shadow-xl flex items-center justify-center group ${className}`}
+      className={`relative w-full h-full min-h-[220px] bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl flex items-center justify-center transition-all duration-300 group ${
+        isSpeaking
+          ? 'border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/50'
+          : 'border border-slate-800'
+      } ${className}`}
     >
       {/* Video Element */}
       <video
@@ -118,7 +129,11 @@ export const VideoTile: React.FC<VideoTileProps> = ({
       {/* Avatar Fallback when Camera is Off */}
       {!hasVideoTrack && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-4 text-center">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center shadow-2xl border-2 border-white/10 ring-4 ring-brand-500/20">
+          <div
+            className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center shadow-2xl border-2 border-white/10 ring-4 transition-all duration-300 ${
+              isSpeaking ? 'ring-emerald-500/60 scale-105' : 'ring-brand-500/20'
+            }`}
+          >
             {userName ? userName.charAt(0).toUpperCase() : '?'}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
@@ -146,7 +161,16 @@ export const VideoTile: React.FC<VideoTileProps> = ({
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none z-10">
         {/* Name & Role Badge */}
         <div className="flex items-center gap-2 max-w-[80%]">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/75 border border-slate-700/50 backdrop-blur-md text-white text-xs font-semibold shadow-md truncate">
+          <div
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border backdrop-blur-md text-white text-xs font-semibold shadow-md truncate transition-colors ${
+              isSpeaking
+                ? 'bg-slate-950/90 border-emerald-500/60 ring-1 ring-emerald-500/40'
+                : 'bg-slate-950/75 border-slate-700/50'
+            }`}
+          >
+            {isSpeaking && (
+              <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse flex-shrink-0" />
+            )}
             {isHost && (
               <span title="Meeting Host">
                 <Crown className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />

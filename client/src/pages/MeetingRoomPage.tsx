@@ -63,6 +63,7 @@ export const MeetingRoomPage: React.FC = () => {
 
   const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
   const [showParticipantsPanel, setShowParticipantsPanel] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
 
@@ -146,6 +147,10 @@ export const MeetingRoomPage: React.FC = () => {
         onToggleAudio={toggleAudio}
         onToggleVideo={toggleVideo}
         onJoinMeeting={() => setHasJoinedRoom(true)}
+        onCancel={() => {
+          stopAllMedia();
+          navigate('/dashboard');
+        }}
       />
     );
   }
@@ -297,6 +302,7 @@ export const MeetingRoomPage: React.FC = () => {
               <VideoGrid
                 localParticipant={localParticipantData}
                 remoteParticipants={remoteParticipantsData}
+                roomCode={roomCode}
               />
             </div>
 
@@ -418,10 +424,12 @@ export const MeetingRoomPage: React.FC = () => {
               isHost={isHost}
               participantCount={participants.length}
               showParticipants={showParticipantsPanel}
+              showChat={showChat}
               onToggleAudio={toggleAudio}
               onToggleVideo={toggleVideo}
               onToggleScreenShare={toggleScreenShare}
               onToggleParticipants={() => setShowParticipantsPanel((prev) => !prev)}
+              onToggleChat={() => setShowChat((prev) => !prev)}
               onLeaveMeeting={handleLeave}
               onEndMeeting={handleEnd}
               isEnding={isEnding}

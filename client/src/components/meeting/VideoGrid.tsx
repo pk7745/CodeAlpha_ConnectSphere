@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VideoTile } from './VideoTile';
 import { ConnectionQuality } from '../../services/peerConnectionManager';
+import { Copy, Check, Users } from 'lucide-react';
 
 export interface ParticipantMediaData {
   id: string;
@@ -11,20 +12,33 @@ export interface ParticipantMediaData {
   isVideoOff?: boolean;
   isScreenSharing?: boolean;
   isHost?: boolean;
+  isSpeaking?: boolean;
   quality?: ConnectionQuality;
 }
 
 interface VideoGridProps {
   localParticipant: ParticipantMediaData;
   remoteParticipants: ParticipantMediaData[];
+  roomCode?: string;
 }
 
 export const VideoGrid: React.FC<VideoGridProps> = ({
   localParticipant,
   remoteParticipants,
+  roomCode,
 }) => {
+  const [copied, setCopied] = useState(false);
   const allParticipants = [localParticipant, ...remoteParticipants];
   const count = allParticipants.length;
+
+  const handleCopy = async () => {
+    if (!roomCode) return;
+    try {
+      await navigator.clipboard.writeText(roomCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
 
   // Check if anyone is actively sharing their screen
   const screenSharer = allParticipants.find((p) => p.isScreenSharing);
@@ -45,6 +59,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
             isVideoOff={screenSharer.isVideoOff}
             isScreenSharing={true}
             isHost={screenSharer.isHost}
+            isSpeaking={screenSharer.isSpeaking}
             quality={screenSharer.quality}
             className="w-full h-full"
           />
@@ -65,6 +80,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
                 isVideoOff={p.isVideoOff}
                 isScreenSharing={false}
                 isHost={p.isHost}
+                isSpeaking={p.isSpeaking}
                 quality={p.quality}
                 className="w-full h-full"
               />
@@ -91,24 +107,43 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
   };
 
   return (
-    <div
-      className={`grid gap-4 flex-1 h-full min-h-[420px] items-center justify-center p-1 ${getGridClasses()}`}
-    >
-      {allParticipants.map((p) => (
-        <div key={p.id} className="w-full h-full min-h-[220px] flex items-center justify-center">
-          <VideoTile
-            stream={p.stream}
-            userName={p.name}
-            isLocal={p.isLocal}
-            isMuted={p.isMuted}
-            isVideoOff={p.isVideoOff}
-            isScreenSharing={p.isScreenSharing}
-            isHost={p.isHost}
-            quality={p.quality}
-            className="w-full h-full"
-          />
+    <div className="flex-1 flex flex-col h-full min-h-[420px] justify-center relative">
+      {/* Empty room notification if host is alone */}
+      {remoteParticipants.length === 0 && roomCode && (
+        <div className="mb-3 mx-auto w-full max-w-lg px-4 py-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-md flex items-center justify-between gap-3 text-xs text-slate-300 shadow-md">
+          <div className="flex items-center gap-2 truncate">
+            <Users className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <span className="truncate">Waiting for others to join...</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-brand-600/30 hover:bg-brand-600/50 text-brand-300 border border-brand-500/30 font-semibold transition-colors flex-shrink-0"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Copied' : 'Invite'}</span>
+          </button>
         </div>
-      ))}
+      )}
+
+      <div className={`grid gap-4 flex-1 h-full items-center justify-center p-1 ${getGridClasses()}`}>
+        {allParticipants.map((p) => (
+          <div key={p.id} className="w-full h-full min-h-[220px] flex items-center justify-center">
+            <VideoTile
+              stream={p.stream}
+              userName={p.name}
+              isLocal={p.isLocal}
+              isMuted={p.isMuted}
+              isVideoOff={p.isVideoOff}
+              isScreenSharing={p.isScreenSharing}
+              isHost={p.isHost}
+              isSpeaking={p.isSpeaking}
+              quality={p.quality}
+              className="w-full h-full"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
