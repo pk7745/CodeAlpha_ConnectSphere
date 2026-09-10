@@ -1,7 +1,7 @@
 # ConnectSphere Render Free-Tier Infrastructure Blueprint
 # Deploys the Frontend as a Static Site (Free) and Backend as a Web Service (Free).
 # Database: Neon Serverless PostgreSQL (configured via DATABASE_URL).
-# Storage: Cloud Object Storage (e.g. Cloudflare R2 / Supabase Storage S3 API).
+# Storage: Supabase Storage Free Tier (configured via SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY).
 # Filesystem on Render free tier is treated as strictly ephemeral.
 
 services:
@@ -34,17 +34,13 @@ services:
           name: connectsphere-client
           property: url
       - key: STORAGE_PROVIDER
-        value: cloud
-      - key: S3_BUCKET
+        value: supabase
+      - key: SUPABASE_URL
         sync: false
-      - key: S3_ENDPOINT
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: S3_ACCESS_KEY_ID
-        sync: false
-      - key: S3_SECRET_ACCESS_KEY
-        sync: false
-      - key: S3_REGION
-        value: auto
+      - key: SUPABASE_STORAGE_BUCKET
+        value: connectsphere-files
       - key: GEMINI_API_KEY
         sync: false
 

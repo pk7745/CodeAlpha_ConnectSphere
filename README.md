@@ -15,7 +15,7 @@ ConnectSphere is an enterprise-grade collaboration platform delivering low-laten
   - **Frontend**: Render Static Site (Free Plan)
   - **Backend**: Render Web Service (Free Plan)
   - **Database**: Neon Serverless PostgreSQL (Free Tier)
-  - **File Storage**: Cloud Object Storage (e.g. Cloudflare R2 / Supabase Storage via S3 API)
+  - **File Storage**: Supabase Storage Free Tier (1 GB free persistent storage, no credit card required)
 - **Real-Time Stack**: WebRTC DTLS-SRTP Mesh + Socket.IO over WSS
 - **Security**: Bcrypt (10 rounds), JWT, Helmet, Strict Production CORS, In-Memory Rate Limiting, Zod Validation
 
@@ -29,7 +29,7 @@ ConnectSphere fulfills every specification mandated for CodeAlpha Task 4:
 | :--- | :--- | :--- |
 | **1. Multi-user video calling** | Browser-native WebRTC mesh with DTLS-SRTP encryption, dynamic grid layout, audio indicator, active speaker highlight, camera toggling, and connection health diagnostics. | Verified (Phases 4–6) |
 | **2. Screen sharing** | Native `navigator.mediaDevices.getDisplayMedia` screen capture with track replacement and auto-restoration upon termination. | Verified (Phase 5) |
-| **3. File sharing** | `StorageProvider` abstraction supporting local disk in dev and S3-compatible cloud object storage in prod, with 15MB limit, executable blocking, and path traversal protection. | Verified (Phase 7 & Hardening) |
+| **3. File sharing** | `StorageProvider` abstraction supporting local disk in dev and Supabase Storage (Free Tier) in prod, with 15MB limit, executable blocking, and path traversal protection. | Verified (Phase 7 & Hardening) |
 | **4. Collaborative whiteboard** | HTML5 Canvas whiteboard modal featuring pen, eraser, geometric shapes (rectangle, circle, line), color palette, stroke width adjustments, undo history, clear canvas, PNG export, and real-time Socket.IO synchronization. | Verified (Phase 7) |
 | **5. Data encryption / security** | Native WebRTC DTLS-SRTP media stream encryption, bcrypt password hashing with 10 salt rounds, signed JWT access tokens, HTTP security headers (Helmet), CORS whitelisting, and strict Zod input validation. | Verified (Phases 2 & 10) |
 | **6. User authentication** | Full authentication pipeline: secure registration, login, JWT token management, automatic session restoration, and authenticated API / Socket middleware. | Verified (Phase 2) |
@@ -79,7 +79,7 @@ Render Static Site (FREE)                         Render Web Service (FREE)
    |                                                  |
    |                                                  +---> Neon PostgreSQL (DATABASE_URL)
    |                                                  +---> Google Gemini API (GEMINI_API_KEY)
-   |                                                  +---> Cloud Object Storage (R2 / S3)
+   |                                                  +---> Supabase Storage (Free Tier)
    |                                                  |
    +--- (HTTPS) ---> API Endpoints -------------------+
    +--- (WSS) -----> Real-Time Signaling -------------+
@@ -109,7 +109,7 @@ Render Static Site (FREE)                         Render Web Service (FREE)
 ### Storage Abstraction (`StorageProvider`)
 - **Interface**: Decoupled from physical disk via `StorageProvider` abstraction.
 - **Local Development**: `LocalFilesystemStorage` writing to `./uploads`.
-- **Production**: `CloudStorageProvider` connected to S3-compatible cloud object storage (e.g. Cloudflare R2 / Supabase Storage), ensuring persistent files without paid Render disks.
+- **Production**: `SupabaseStorageProvider` connected to Supabase Storage Free Tier (1 GB free storage, zero billing setup), ensuring persistent files without paid Render disks.
 
 ---
 
@@ -221,7 +221,7 @@ CodeAlpha_ConnectSphere/
 │   ├── RENDER_DEPLOYMENT_AUDIT.md
 │   ├── RENDER_DEPLOYMENT.md    # Step-by-step instructions for Render & Neon
 │   ├── NEON_DATABASE.md        # Neon connection & migration guide
-│   └── STORAGE.md              # StorageProvider & Cloudflare R2 / S3 guide
+│   └── STORAGE.md              # StorageProvider & Supabase Storage Free Tier guide
 │
 ├── render.yaml                 # Render Blueprint specification (100% Free Plan)
 ├── .env.example                # Global environment template
@@ -239,7 +239,7 @@ CodeAlpha_ConnectSphere/
    - For larger meetings exceeding 6–8 concurrent video streams, an SFU (Selective Forwarding Unit) media server would be recommended.
 2. **Ephemeral Web Service Filesystem**:
    - On Render Free Web Services, container filesystems are ephemeral and reset on sleep or restart.
-   - Meeting file attachments require configuring `STORAGE_PROVIDER=cloud` with S3-compatible cloud object storage (e.g. Cloudflare R2 / Supabase Storage).
+   - Meeting file attachments require configuring `STORAGE_PROVIDER=supabase` with Supabase Storage Free Tier.
 3. **In-Memory Rate Limiting**:
    - The rate limiters are process-local (single instance). Multi-instance clusters would require a shared Redis store.
 

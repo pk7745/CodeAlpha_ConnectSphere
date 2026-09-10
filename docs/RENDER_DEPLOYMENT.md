@@ -17,7 +17,7 @@ Render Static Site (FREE)                         Render Web Service (FREE)
    |                                                  |
    |                                                  +---> Neon PostgreSQL (DATABASE_URL)
    |                                                  +---> Google Gemini API (GEMINI_API_KEY)
-   |                                                  +---> Cloud Object Storage (R2 / Supabase S3)
+   |                                                  +---> Supabase Storage (Free Tier)
    |                                                  |
    +--- (HTTPS) ---> API Endpoints -------------------+
    +--- (WSS) -----> Real-Time Signaling -------------+
@@ -25,8 +25,7 @@ Render Static Site (FREE)                         Render Web Service (FREE)
 
 - **Frontend**: Render Static Site (100% Free, Global CDN, SPA rewrite).
 - **Backend**: Render Web Service (100% Free tier, binds to `0.0.0.0`, port managed by Render).
-- **Database**: Neon Serverless PostgreSQL (Free tier, connection pooling).
-- **File Storage**: Cloud Object Storage (e.g., Cloudflare R2 / Supabase Storage via S3 API) providing persistent storage with zero egress fees. The Render filesystem is treated as strictly ephemeral.
+- **File Storage**: Supabase Storage Free Tier (1 GB free persistent storage, no credit card required). The Render filesystem is treated as strictly ephemeral.
 - **Persistent Disk**: **NOT used**. No paid Render plan is required.
 
 ---
@@ -65,15 +64,15 @@ This applies `server/prisma/migrations/20260910000000_init_neon_postgresql/migra
 
 ---
 
-### STEP 4: (Optional but Recommended) Set Up Free Cloud Storage (Cloudflare R2)
-Because Render Free Web Services run on ephemeral filesystems, configure free cloud object storage for meeting file attachments:
-1. Log into the Cloudflare Dashboard and navigate to **R2**.
-2. Click **Create bucket** (e.g. `connectsphere-uploads`).
-3. Under **Manage R2 API Tokens**, create an API token with Object Read & Write permissions.
-4. Note your:
-   - Account ID / S3 Endpoint: `https://<account_id>.r2.cloudflarestorage.com`
-   - Access Key ID
-   - Secret Access Key
+### STEP 4: Set Up Free Cloud Storage (Supabase Storage — No Credit Card)
+Because Render Free Web Services run on ephemeral filesystems, configure free Supabase Storage for meeting file attachments:
+1. Log into the [Supabase Dashboard](https://supabase.com) and select/create a free project.
+2. Go to **Storage** -> **New bucket**.
+3. Bucket name: `connectsphere-files`.
+4. Keep **Public bucket** unticked (Private).
+5. In Project Settings -> **API**, copy:
+   - **Project URL** (`https://<project-ref>.supabase.co`)
+   - **service_role secret** key (Project API keys)
 
 ---
 
@@ -104,12 +103,10 @@ Under the **Environment** tab of `connectsphere-server`, add:
 | `DATABASE_URL` | `postgresql://...` | Your Neon PostgreSQL connection string |
 | `JWT_SECRET` | *(Click "Generate")* | Cryptographic 64+ character random secret |
 | `CLIENT_URL` | `https://placeholder` | Update in Step 9 with your frontend URL |
-| `STORAGE_PROVIDER` | `cloud` | Enables S3-compatible cloud object storage |
-| `S3_ENDPOINT` | `https://<id>.r2.cloudflarestorage.com` | S3 endpoint for Cloudflare R2 / Supabase |
-| `S3_BUCKET` | `connectsphere-uploads` | Bucket name |
-| `S3_ACCESS_KEY_ID` | `<your_access_key>` | Server-side cloud storage key |
-| `S3_SECRET_ACCESS_KEY` | `<your_secret_key>` | Server-side cloud storage secret |
-| `S3_REGION` | `auto` | Cloud storage region |
+| `STORAGE_PROVIDER` | `supabase` | Enables Supabase Storage Free Tier |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` | Your Supabase Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | `<your-service-role-secret-key>` | Server-side secret key |
+| `SUPABASE_STORAGE_BUCKET` | `connectsphere-files` | Supabase storage bucket name |
 | `GEMINI_API_KEY` | `AIza...` | Optional: Google Gemini AI key (local NLP fallback if empty) |
 
 > [!NOTE]

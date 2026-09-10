@@ -7,11 +7,11 @@
 - **Frontend**: Render Static Site (React 18 / Vite SPA — FREE)
 - **Backend**: Render Web Service (Node.js / Express / Socket.IO — FREE)
 - **Database**: Neon Serverless PostgreSQL (FREE)
-- **File Storage**: Cloud Object Storage (Cloudflare R2 / Supabase Storage via S3 API — FREE)
+- **File Storage**: Supabase Storage Free Tier (1 GB persistent storage — FREE, no credit card)
 - **AI Intelligence**: Google Gemini API (server-side only) with offline local NLP fallback
 - **Real-Time**: Socket.IO over WebSocket (HTTPS / WSS)
 - **Media**: Native Browser WebRTC Mesh (DTLS-SRTP, STUN NAT traversal, 2–6 participants)
-- **Storage**: StorageProvider Abstraction (`LocalFilesystemStorage` in dev, `CloudStorageProvider` in prod)
+- **Storage**: StorageProvider Abstraction (`LocalFilesystemStorage` in dev, `SupabaseStorageProvider` in prod)
 
 ---
 
@@ -38,7 +38,7 @@ ConnectSphere is structured as a clean TypeScript monorepo with two primary work
                 ^                                     |
                 | WebRTC Mesh (P2P DTLS-SRTP)         +---> Neon PostgreSQL
                 v                                     +---> Gemini API (Server)
-        [Other Participants]                          +---> Cloud Object Storage (R2 / S3)
+        [Other Participants]                          +---> Supabase Storage (Free Tier)
 ```
 
 ---
@@ -52,7 +52,7 @@ ConnectSphere is structured as a clean TypeScript monorepo with two primary work
 | **B-03** | File Download URL | `collaborationApi.ts` fetched `/api/meetings/...` directly. | Download requests failed on separate static domain. | Centralized download fetches to use dynamic `API_BASE`. |
 | **B-04** | Server Host Binding | `server.listen(port)` did not bind to `0.0.0.0`. | Render Web Services require explicit binding to `0.0.0.0` for port detection. | Bound server explicitly to `0.0.0.0`. |
 | **B-05** | CORS Security | CORS allowed localhost in production. | In production, opening CORS to unverified origins is insecure. | Strict origin verification in production: allow exclusively `CLIENT_URL`. |
-| **B-06** | Ephemeral File Storage | `fileRoutes.ts` wrote to `./uploads` on local disk. | Render Free Web Service filesystem is strictly ephemeral; files are lost on restart. Render Persistent Disk requires a paid plan. | Implemented `CloudStorageProvider` using free S3-compatible cloud object storage (Cloudflare R2 / Supabase) with `LocalFilesystemStorage` for local dev. |
+| **B-06** | Ephemeral File Storage | `fileRoutes.ts` wrote to `./uploads` on local disk. | Render Free Web Service filesystem is strictly ephemeral; files are lost on restart. Render Persistent Disk requires a paid plan. | Implemented `SupabaseStorageProvider` using free Supabase Storage (1GB free, no billing required) with `LocalFilesystemStorage` for local dev. |
 | **B-07** | Database Provider | `schema.prisma` configured with SQLite. | Neon is cloud PostgreSQL. SQLite cannot connect to Neon. | Created `schema.postgresql.prisma` and generated deterministic PostgreSQL migration SQL. |
 | **B-08** | Build Sequence | Build script was `tsc`. | Code lacked updated Prisma client. | Updated server build to `prisma generate && tsc`. |
 | **B-09** | SPA Client Routing | Direct navigation to non-root routes failed on static CDN. | Static sites return 404 for non-root paths without rewrite rules. | Added rewrite rule in `render.yaml` (`/* -> /index.html`). |
@@ -73,12 +73,10 @@ ConnectSphere is structured as a clean TypeScript monorepo with two primary work
 | `DATABASE_URL` | **Yes** | Neon PostgreSQL connection string | `postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require` |
 | `JWT_SECRET` | **Yes** | Secret for signing auth tokens (min 32 chars) | Random 64-char string |
 | `CLIENT_URL` | **Yes** | Deployed Render Frontend Static Site URL | `https://connectsphere.onrender.com` |
-| `STORAGE_PROVIDER` | **Yes** | Storage mode | `cloud` (uses S3/R2) or `local` (ephemeral dev) |
-| `S3_ENDPOINT` | Required if cloud | Endpoint URL | `https://<id>.r2.cloudflarestorage.com` |
-| `S3_BUCKET` | Required if cloud | S3 bucket name | `connectsphere-uploads` |
-| `S3_ACCESS_KEY_ID` | Required if cloud | Object storage access key | Server-side secret |
-| `S3_SECRET_ACCESS_KEY` | Required if cloud | Object storage secret key | Server-side secret |
-| `S3_REGION` | Optional | Object storage region | `auto` |
+| `STORAGE_PROVIDER` | **Yes** | Storage mode | `supabase` (or `local` for dev) |
+| `SUPABASE_URL` | Required if prod | Supabase Project URL | `https://<project-ref>.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Required if prod | Supabase Service Role Secret Key | Server-side secret |
+| `SUPABASE_STORAGE_BUCKET` | Optional | Bucket name (default: connectsphere-files) | `connectsphere-files` |
 | `GEMINI_API_KEY` | Optional | Google Gemini API key | Server-side secret (local NLP fallback if omitted) |
 
 ### Frontend Static Site (`client`)

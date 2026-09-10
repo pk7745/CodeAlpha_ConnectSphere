@@ -1,6 +1,6 @@
-# ConnectSphere: File Storage Architecture & Persistence
+# ConnectSphere: File Storage Architecture & Persistence (Supabase Storage Free Tier)
 
-This document details the **StorageProvider** abstraction, local development storage, and production cloud object storage on the Render Free Tier.
+This document details the **StorageProvider** abstraction, local development storage, and production cloud object storage on the **Supabase Storage Free Tier**.
 
 ---
 
@@ -19,8 +19,8 @@ ConnectSphere completely decouples file handling from local disk paths via the `
              |                                           |
              v                                           v
 +--------------------------+               +--------------------------+
-|  LocalFilesystemStorage  |               |   CloudStorageProvider   |
-|  (Development: ./uploads)|               |  (Production: S3 / R2)   |
+|  LocalFilesystemStorage  |               |  SupabaseStorageProvider |
+|  (Development: ./uploads)|               | (Production: 1GB Free)   |
 +--------------------------+               +--------------------------+
 ```
 
@@ -28,7 +28,7 @@ ConnectSphere completely decouples file handling from local disk paths via the `
 - `saveFile(file: Express.Multer.File): Promise<StorageFileResult>`: Saves file to local or cloud storage and returns storage metadata.
 - `getFileStream(storagePath: string): Promise<Readable | null>`: Retrieves a readable stream for streaming the file directly to HTTP clients.
 - `resolvePath(storagePath: string): string | null`: Validates local disk file existence and enforces cross-platform path traversal protection (`..`). Returns `null` for cloud storage.
-- `deleteFile(storagePath: string): Promise<boolean>`: Safely removes the file from local disk or cloud bucket.
+- `deleteFile(storagePath: string): Promise<boolean>`: Safely removes the file from local disk or Supabase bucket.
 - `fileExists(storagePath: string): Promise<boolean>`: Confirms file existence.
 - `getStorageDir(): string`: Returns local storage or staging directory path.
 
@@ -41,40 +41,36 @@ ConnectSphere completely decouples file handling from local disk paths via the `
 - Created automatically on server bootstrap if missing.
 - Files are saved directly to disk and served via streaming / `res.download`.
 
-### Production Deployment on Render Free Tier (`STORAGE_PROVIDER="cloud"`)
+### Production Deployment on Render Free Tier (`STORAGE_PROVIDER="supabase"`)
 - **Render Free Web Service**: Runs on an ephemeral filesystem. Any file written to the container disk is lost on restart.
-- **Render Persistent Disks**: Require a paid Starter plan and are **NOT used** in this free-tier deployment.
-- **Production Solution**: ConnectSphere uses `CloudStorageProvider` connected to an S3-compatible cloud object storage service (such as Cloudflare R2 or Supabase Storage).
+- **Render Persistent Disks**: Require a paid Starter plan and are **NOT used**.
+- **Production Solution**: ConnectSphere uses `SupabaseStorageProvider` connected to **Supabase Storage Free Tier**, which provides 1GB of persistent cloud storage with zero billing required.
 
 ---
 
-## 3. Cloud Provider Selection: S3-Compatible Storage vs. Cloudinary
+## 3. Supabase Storage Setup (100% Free, No Credit Card)
 
-ConnectSphere specifically chooses **S3-compatible Object Storage (e.g. Cloudflare R2 / Supabase Storage)** for production:
+1. Sign up or log into [Supabase](https://supabase.com).
+2. Create a new free project (or use an existing one).
+3. In the Supabase dashboard, go to **Storage** -> **Create new bucket**:
+   - **Bucket Name**: `connectsphere-files`
+   - **Public bucket**: **Disabled (Private)** — All access is authorized through the ConnectSphere backend API.
+   - **File size limit**: `15MB` (or leave default).
+4. In Project Settings -> **API**:
+   - Copy **Project URL** (`https://<project-ref>.supabase.co`).
+   - Copy **service_role secret** key (under Project API keys).
+5. Add these environment variables in your Render Web Service:
+   - `STORAGE_PROVIDER=supabase`
+   - `SUPABASE_URL=https://<project-ref>.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY=<your-service-role-secret-key>`
+   - `SUPABASE_STORAGE_BUCKET=connectsphere-files`
 
-| Feature | Cloudflare R2 (Recommended) | Cloudinary Free Tier |
-| :--- | :--- | :--- |
-| **Free Tier Allowance** | **10 GB / month** free storage | 25 Monthly Credits (~25 GB) |
-| **Bandwidth / Egress** | **$0.00 (Zero egress fees)** | Counts against monthly credits |
-| **Supported File Types** | Arbitrary documents (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.zip`, `.csv`, images) | Primary focus: media (images/video). Non-media files treated as `raw` |
-| **Raw File Size Limit** | Up to 5 GB | **Strict 10 MB limit** on free accounts (fails ConnectSphere 15 MB requirement) |
-| **API Standard** | Industry-standard S3 API | Proprietary Cloudinary SDK |
-| **Direct Streaming** | Standard `GetObjectCommand` stream | Specialized raw resource delivery URLs |
-
-### Recommended Provider: Cloudflare R2
-1. Create a free Cloudflare account and create an R2 bucket (e.g. `connectsphere-uploads`).
-2. Generate an R2 API token with read/write permissions.
-3. Set the environment variables in your Render Web Service:
-   - `STORAGE_PROVIDER=cloud`
-   - `S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com`
-   - `S3_BUCKET=connectsphere-uploads`
-   - `S3_ACCESS_KEY_ID=<r2_access_key_id>`
-   - `S3_SECRET_ACCESS_KEY=<r2_secret_access_key>`
-   - `S3_REGION=auto`
+> [!IMPORTANT]
+> **Zero Client Exposure**: The `SUPABASE_SERVICE_ROLE_KEY` is loaded exclusively into the backend Node.js process (`server`). It is **never** sent or exposed to the React frontend or Vite client.
 
 ---
 
-## 4. Database Metadata Storage
+## 4. Database Metadata Storage (Neon PostgreSQL)
 
 Neon PostgreSQL stores **file metadata only**. Raw file contents are never stored in the database.
 
@@ -86,7 +82,7 @@ Database Schema (`SharedFile`):
 - `originalName`: User's original uploaded filename
 - `fileType`: MIME type (e.g. `application/pdf`)
 - `fileSize`: Size in bytes (up to 15MB)
-- `storagePath`: Relative storage key / cloud object key
+- `storagePath`: Relative storage key / Supabase object key
 - `createdAt`: Timestamp
 
 ---
