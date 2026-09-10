@@ -20,12 +20,18 @@ export type AppSocketServer = SocketIOServer<
 let ioInstance: AppSocketServer | null = null;
 
 export function initSocketServer(server: http.Server): AppSocketServer {
+  const allowedOrigins =
+    config.nodeEnv === 'production'
+      ? [config.clientUrl]
+      : [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'].filter(Boolean);
+
   const io: AppSocketServer = new SocketIOServer(server, {
     cors: {
-      origin: [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },
+    transports: ['websocket', 'polling'],
     pingTimeout: 60000,
     pingInterval: 25000,
   });

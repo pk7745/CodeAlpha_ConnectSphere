@@ -1,19 +1,14 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import crypto from 'crypto';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/authMiddleware';
 import { getSocketServer } from '../socket';
+import { storageProvider } from '../services/storage';
+import { fileUploadRateLimiter } from '../middleware/rateLimitMiddleware';
 
 const router = Router();
-
-// Uploads directory configuration
-const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 // Blocked executable extensions
 const BLOCKED_EXTENSIONS = [
@@ -22,10 +17,10 @@ const BLOCKED_EXTENSIONS = [
   '.com', '.scr', '.pif', '.hta', '.cpl'
 ];
 
-// Configure Multer storage
+// Configure Multer storage using StorageProvider abstraction
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, UPLOADS_DIR);
+    cb(null, storageProvider.getStorageDir());
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -56,6 +51,7 @@ router.use(requireAuth);
 // 1. Upload File to Meeting
 router.post(
   '/:meetingId/files',
+  fileUploadRateLimiter,
   (req, res, next) => {
     upload.single('file')(req, res, (err: any) => {
       if (err) {
@@ -85,7 +81,7 @@ router.post(
 
       if (!meeting) {
         // Clean up uploaded file if meeting not found
-        fs.unlink(file.path, () => {});
+        storageProvider.deleteFile(file.filename);
         return res.status(404).json({ error: 'Meeting not found' });
       }
 
@@ -95,7 +91,7 @@ router.post(
         meeting.participants.some((p) => p.userId === user.id);
 
       if (!isParticipant) {
-        fs.unlink(file.path, () => {});
+        storageProvider.deleteFile(file.filename);
         return res.status(403).json({ error: 'You must be a participant to share files in this meeting' });
       }
 
@@ -202,11 +198,10 @@ router.get(['/:meetingId/files/:fileId', '/:meetingId/files/:fileId/download'], 
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Path traversal prevention: resolve strictly inside UPLOADS_DIR
-    const safeFilename = path.basename(file.storagePath);
-    const resolvedPath = path.resolve(UPLOADS_DIR, safeFilename);
+    // Path traversal prevention: resolve strictly via storageProvider
+    const resolvedPath = storageProvider.resolvePath(file.storagePath);
 
-    if (!resolvedPath.startsWith(UPLOADS_DIR) || !fs.existsSync(resolvedPath)) {
+    if (!resolvedPath) {
       return res.status(404).json({ error: 'Physical file not found on server' });
     }
 
@@ -245,12 +240,8 @@ router.delete('/:meetingId/files/:fileId', async (req: Request, res: Response) =
       return res.status(403).json({ error: 'Only the uploader or meeting host can delete this file' });
     }
 
-    // Delete disk file
-    const safeFilename = path.basename(file.storagePath);
-    const resolvedPath = path.resolve(UPLOADS_DIR, safeFilename);
-    if (resolvedPath.startsWith(UPLOADS_DIR) && fs.existsSync(resolvedPath)) {
-      fs.unlink(resolvedPath, () => {});
-    }
+    // Delete disk file via storageProvider
+    await storageProvider.deleteFile(file.storagePath);
 
     // Delete DB record
     await prisma.sharedFile.delete({

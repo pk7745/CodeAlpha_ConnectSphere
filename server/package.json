@@ -5,9 +5,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
     "prisma:push": "prisma db push",
     "test": "node test-auth.js && node test-meeting.js && node test-socket.js && node test-webrtc.js && node test-collaboration.js && node test-ai.js && node test-polls.js",
     "test:auth": "node test-auth.js",
@@ -17,7 +18,8 @@
     "test:collab": "node test-collaboration.js",
     "test:ai": "node test-ai.js",
     "test:polls": "node test-polls.js",
-    "test:browser": "node test-browser-e2e.js"
+    "test:browser": "node test-browser-e2e.js",
+    "test:prod": "node test-prod-start.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

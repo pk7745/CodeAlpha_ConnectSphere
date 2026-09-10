@@ -2,9 +2,11 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/authMiddleware';
 import { AiMeetingService } from '../services/aiService';
+import { aiRateLimiter } from '../middleware/rateLimitMiddleware';
 
 const router = Router();
 router.use(requireAuth);
+router.use(aiRateLimiter);
 
 // Helper to check membership
 async function checkMembership(meetingId: string, userId: string) {

@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiRequest, API_BASE } from './api';
 
 export interface ChatMessage {
   id: string;
@@ -207,7 +207,7 @@ export async function downloadSharedFileApi(
   originalName: string
 ): Promise<void> {
   const token = localStorage.getItem('connectsphere_token');
-  const response = await fetch(`/api/meetings/${meetingId}/files/${fileId}/download`, {
+  const response = await fetch(`${API_BASE}/meetings/${meetingId}/files/${fileId}/download`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 

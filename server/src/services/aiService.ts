@@ -1,3 +1,5 @@
+import { config } from '../config';
+
 export interface MeetingAiInput {
   title: string;
   notes?: string;
@@ -18,12 +20,77 @@ export interface MeetingAiSummaryResult {
   generatedAt: string;
 }
 
+/**
+ * Server-side Google Gemini 1.5 Flash caller with 8s timeout.
+ */
+async function callGeminiApi(prompt: string): Promise<string | null> {
+  if (!config.geminiApiKey) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
+      config.geminiApiKey
+    )}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+    const data: any = await response.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch {
+    return null;
+  }
+}
+
 export class AiMeetingService {
   /**
    * Generates a structured executive summary and meeting intelligence.
-   * Runs local NLP heuristics with optional external LLM fallback.
+   * Leverages server-side Gemini API when available, with automatic local NLP fallback.
    */
   public static async generateSummary(input: MeetingAiInput): Promise<MeetingAiSummaryResult> {
+    // If Gemini API is configured, attempt intelligent synthesis
+    if (config.geminiApiKey) {
+      try {
+        const prompt = `You are an executive meeting assistant. Analyze this meeting data and respond ONLY in valid JSON matching this schema:
+{
+  "executiveSummary": "string",
+  "keyDiscussionPoints": ["string"],
+  "decisionsMade": ["string"],
+  "suggestedActionItems": [{"task": "string", "suggestedAssignee": "string", "priority": "HIGH"|"MEDIUM"|"LOW"}],
+  "sentiment": "POSITIVE"|"CONSTRUCTIVE"|"ANALYTICAL"|"NEUTRAL",
+  "engagementScore": number (0-100)
+}
+
+Meeting Data:
+Title: ${input.title}
+Notes: ${input.notes || 'None'}
+Agenda: ${JSON.stringify(input.agendaItems || [])}
+Chat: ${JSON.stringify(input.chatMessages || [])}
+Actions: ${JSON.stringify(input.actionItems || [])}`;
+
+        const rawText = await callGeminiApi(prompt);
+        if (rawText) {
+          const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+          if (parsed.executiveSummary && Array.isArray(parsed.keyDiscussionPoints)) {
+            return {
+              ...parsed,
+              generatedAt: new Date().toISOString(),
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('[AiMeetingService] Gemini API call failed, falling back to local NLP:', err);
+      }
+    }
     const notes = (input.notes || '').trim();
     const chat = input.chatMessages || [];
     const agenda = input.agendaItems || [];
@@ -180,6 +247,29 @@ export class AiMeetingService {
    * Answers contextual questions regarding the meeting transcript and agenda.
    */
   public static async answerQuestion(input: MeetingAiInput, question: string): Promise<string> {
+    // If Gemini API is configured, attempt intelligent contextual answer
+    if (config.geminiApiKey) {
+      try {
+        const prompt = `You are an AI assistant in a live meeting room. Answer the user's question concisely based strictly on the provided meeting context.
+
+Meeting Context:
+Title: ${input.title}
+Notes: ${input.notes || 'None'}
+Agenda: ${JSON.stringify(input.agendaItems || [])}
+Chat: ${JSON.stringify(input.chatMessages || [])}
+Action Items: ${JSON.stringify(input.actionItems || [])}
+
+Question: ${question}`;
+
+        const answer = await callGeminiApi(prompt);
+        if (answer && answer.trim().length > 0) {
+          return answer.trim();
+        }
+      } catch (err) {
+        console.warn('[AiMeetingService] Gemini Q&A failed, falling back to local search:', err);
+      }
+    }
+
     const q = question.toLowerCase();
     const notes = input.notes || '';
     const chat = input.chatMessages || [];

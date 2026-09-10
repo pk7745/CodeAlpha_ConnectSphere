@@ -35,11 +35,12 @@ class SocketService {
     }
 
     const token = localStorage.getItem('connectsphere_token') || '';
+    const socketUrl = (import.meta.env.VITE_SOCKET_URL as string) || (import.meta.env.VITE_API_URL as string) || undefined;
 
     this.connectionState = 'connecting';
     this.notifyState();
 
-    this.socket = io({
+    const socketOptions = {
       auth: { token },
       transports: ['websocket', 'polling'],
       autoConnect: true,
@@ -48,7 +49,9 @@ class SocketService {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
-    });
+    };
+
+    this.socket = socketUrl ? io(socketUrl, socketOptions) : io(socketOptions);
 
     this.socket.on('connect', () => {
       this.connectionState = 'connected';
