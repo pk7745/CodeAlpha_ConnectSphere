@@ -2,11 +2,11 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
-import { Server as SocketIOServer } from 'socket.io';
 import { config } from './config';
 import healthRoutes from './routes/healthRoutes';
 import authRoutes from './routes/authRoutes';
 import meetingRoutes from './routes/meetingRoutes';
+import { initSocketServer } from './socket';
 
 const app = express();
 const server = http.createServer(app);
@@ -30,24 +30,8 @@ app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/meetings', meetingRoutes);
 
-// Socket.IO setup
-export const io = new SocketIOServer(server, {
-  cors: {
-    origin: [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-});
-
-io.on('connection', (socket) => {
-  console.log(`[Socket.IO] Client connected: ${socket.id}`);
-
-  socket.on('disconnect', (reason) => {
-    console.log(`[Socket.IO] Client disconnected: ${socket.id} (reason: ${reason})`);
-  });
-});
+// Socket.IO Server Initialization
+export const io = initSocketServer(server);
 
 if (process.env.NODE_ENV !== 'test') {
   server.listen(config.port, () => {
