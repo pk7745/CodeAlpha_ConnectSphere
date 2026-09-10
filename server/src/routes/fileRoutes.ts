@@ -95,16 +95,19 @@ router.post(
         return res.status(403).json({ error: 'You must be a participant to share files in this meeting' });
       }
 
+      // Save file through storageProvider (handles local disk or cloud object storage)
+      const saveResult = await storageProvider.saveFile(file);
+
       // Persist file metadata
       const sharedFile = await prisma.sharedFile.create({
         data: {
           meetingId,
           uploaderId: user.id,
-          filename: file.filename,
+          filename: saveResult.filename,
           originalName: file.originalname,
           fileType: file.mimetype || 'application/octet-stream',
           fileSize: file.size,
-          storagePath: file.filename, // Store only the relative filename
+          storagePath: saveResult.storagePath, // Relative storage key
         },
         include: {
           uploader: {
@@ -198,14 +201,24 @@ router.get(['/:meetingId/files/:fileId', '/:meetingId/files/:fileId/download'], 
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Path traversal prevention: resolve strictly via storageProvider
-    const resolvedPath = storageProvider.resolvePath(file.storagePath);
-
-    if (!resolvedPath) {
-      return res.status(404).json({ error: 'Physical file not found on server' });
+    // Stream file through storageProvider (cloud object storage or local filesystem)
+    const fileStream = await storageProvider.getFileStream(file.storagePath);
+    if (fileStream) {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(file.originalName)}"`
+      );
+      res.setHeader('Content-Type', file.fileType || 'application/octet-stream');
+      return fileStream.pipe(res);
     }
 
-    return res.download(resolvedPath, file.originalName);
+    // Fallback: check local path resolution
+    const resolvedPath = storageProvider.resolvePath(file.storagePath);
+    if (resolvedPath) {
+      return res.download(resolvedPath, file.originalName);
+    }
+
+    return res.status(404).json({ error: 'Physical file not found in storage' });
   } catch (error) {
     console.error('[File download] Error:', error);
     return res.status(500).json({ error: 'Failed to download file' });

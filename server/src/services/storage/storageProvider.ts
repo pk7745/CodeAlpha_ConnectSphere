@@ -1,3 +1,5 @@
+import { Readable } from 'stream';
+
 export interface StorageFileResult {
   filename: string;
   storagePath: string;
@@ -11,8 +13,8 @@ export interface StorageProvider {
   saveFile(file: Express.Multer.File): Promise<StorageFileResult>;
 
   /**
-   * Resolves the absolute path for an existing file, protecting against path traversal.
-   * Returns null if the file does not exist or is invalid.
+   * Resolves the absolute path for an existing file if stored on disk,
+   * protecting against path traversal. Returns null if not stored locally or invalid.
    */
   resolvePath(storagePath: string): string | null;
 
@@ -27,7 +29,13 @@ export interface StorageProvider {
   fileExists(storagePath: string): Promise<boolean>;
 
   /**
+   * Retrieves a readable stream for streaming the file to an HTTP response.
+   */
+  getFileStream(storagePath: string): Promise<Readable | null>;
+
+  /**
    * Gets the active storage directory path.
    */
   getStorageDir(): string;
 }
+

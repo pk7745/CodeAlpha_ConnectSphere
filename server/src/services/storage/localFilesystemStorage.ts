@@ -60,6 +60,12 @@ export class LocalFilesystemStorage implements StorageProvider {
     return resolved !== null;
   }
 
+  public async getFileStream(storagePath: string): Promise<fs.ReadStream | null> {
+    const resolved = this.resolvePath(storagePath);
+    if (!resolved) return null;
+    return fs.createReadStream(resolved);
+  }
+
   public async deleteFile(storagePath: string): Promise<boolean> {
     try {
       const resolved = this.resolvePath(storagePath);

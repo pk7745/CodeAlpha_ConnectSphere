@@ -1,5 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 
+/**
+ * In-Memory Process-Local Sliding-Window Rate Limiter
+ * 
+ * Scope: This rate limiter is single-instance / process-local.
+ * It provides effective DDoS and brute-force protection for the single Render
+ * Free Web Service container without requiring external paid infrastructure.
+ * Note: Distributed multi-container deployments would require a centralized store (e.g. Redis).
+ */
+
 interface RateLimitOptions {
   windowMs: number;
   max: number;
