@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { getMeetingSummaryApi } from '../../services/meetingApi';
+import { getMeetingAiSummaryApi, MeetingAiSummary } from '../../services/aiApi';
 import { MeetingSummary } from '../../types/meeting';
-import { X, Clock, Users, Shield, Calendar, Loader2, AlertCircle } from 'lucide-react';
+import { X, Clock, Users, Shield, Calendar, Loader2, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface MeetingSummaryModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const MeetingSummaryModal: React.FC<MeetingSummaryModalProps> = ({
   onClose,
 }) => {
   const [summary, setSummary] = useState<MeetingSummary | null>(null);
+  const [aiSummary, setAiSummary] = useState<MeetingAiSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,12 +24,20 @@ export const MeetingSummaryModal: React.FC<MeetingSummaryModalProps> = ({
     if (isOpen && meetingId) {
       setIsLoading(true);
       setError(null);
-      getMeetingSummaryApi(meetingId)
-        .then((data) => setSummary(data))
+      Promise.all([
+        getMeetingSummaryApi(meetingId).catch(() => null),
+        getMeetingAiSummaryApi(meetingId).catch(() => null),
+      ])
+        .then(([data, aiData]) => {
+          if (!data) throw new Error('Failed to load meeting summary.');
+          setSummary(data);
+          setAiSummary(aiData);
+        })
         .catch((err) => setError(err.message || 'Failed to load meeting summary.'))
         .finally(() => setIsLoading(false));
     } else {
       setSummary(null);
+      setAiSummary(null);
     }
   }, [isOpen, meetingId]);
 
@@ -126,6 +136,41 @@ export const MeetingSummaryModal: React.FC<MeetingSummaryModalProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* AI Executive Summary Card */}
+            {aiSummary && (
+              <div className="p-4 rounded-xl bg-gradient-to-br from-brand-50/50 to-indigo-50/30 dark:from-brand-950/20 dark:to-slate-900/40 border border-brand-200/60 dark:border-brand-800/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400">
+                    <Sparkles className="w-4 h-4" />
+                    <span>AI Executive Intelligence</span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300">
+                    {aiSummary.sentiment} Sentiment
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                  {aiSummary.executiveSummary}
+                </p>
+
+                {aiSummary.decisionsMade.length > 0 && (
+                  <div className="pt-2 border-t border-brand-100 dark:border-slate-800/80">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      Key Decisions:
+                    </span>
+                    <ul className="space-y-1">
+                      {aiSummary.decisionsMade.slice(0, 3).map((d, i) => (
+                        <li key={i} className="text-[11px] text-slate-600 dark:text-slate-300 flex items-start gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <span>{d}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Participants list */}
             <div>

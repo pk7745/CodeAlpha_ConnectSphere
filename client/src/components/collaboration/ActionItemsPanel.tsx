@@ -7,7 +7,8 @@ import {
   deleteActionItemApi,
   ActionItem,
 } from '../../services/collaborationApi';
-import { CheckCircle, Clock, Circle, Plus, Trash2, Loader2, ListTodo, User } from 'lucide-react';
+import { extractMeetingActionsAiApi } from '../../services/aiApi';
+import { CheckCircle, Clock, Circle, Plus, Trash2, Loader2, ListTodo, User, Sparkles } from 'lucide-react';
 
 interface ActionItemsPanelProps {
   meetingId: string;
@@ -19,6 +20,7 @@ export const ActionItemsPanel: React.FC<ActionItemsPanelProps> = ({ meetingId })
   const [newAssignee, setNewAssignee] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isExtractingAi, setIsExtractingAi] = useState(false);
 
   const loadActions = async () => {
     if (!meetingId) return;
@@ -127,17 +129,45 @@ export const ActionItemsPanel: React.FC<ActionItemsPanelProps> = ({ meetingId })
     );
   };
 
+  const handleExtractAi = async () => {
+    try {
+      setIsExtractingAi(true);
+      await extractMeetingActionsAiApi(meetingId, true);
+      await loadActions();
+    } catch (err: any) {
+      alert(err.message || 'Failed to extract action items with AI');
+    } finally {
+      setIsExtractingAi(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-900/50 rounded-2xl overflow-hidden p-3 gap-3">
       {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <ListTodo className="w-4 h-4 text-brand-400" />
-          <h4 className="text-xs font-bold text-white">Action Items & Deliverables</h4>
+          <h4 className="text-xs font-bold text-white">Action Items</h4>
         </div>
-        <span className="text-[11px] text-slate-400 font-semibold">
-          {items.filter((i) => i.status === 'DONE').length} of {items.length} Resolved
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExtractAi}
+            disabled={isExtractingAi}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/30 text-[10px] font-semibold transition-all hover:scale-105 disabled:opacity-50"
+            title="Scan meeting conversation and auto-extract deliverables with AI"
+          >
+            {isExtractingAi ? (
+              <Loader2 className="w-3 h-3 animate-spin text-brand-400" />
+            ) : (
+              <Sparkles className="w-3 h-3 text-brand-400" />
+            )}
+            <span>AI Extract</span>
+          </button>
+          <span className="text-[10px] text-slate-400 font-semibold">
+            {items.filter((i) => i.status === 'DONE').length}/{items.length}
+          </span>
+        </div>
       </div>
 
       {/* Add Item Form */}

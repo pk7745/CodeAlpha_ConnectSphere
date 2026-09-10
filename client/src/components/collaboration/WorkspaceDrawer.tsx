@@ -4,6 +4,7 @@ import { FileSharingPanel } from './FileSharingPanel';
 import { NotesPanel } from './NotesPanel';
 import { AgendaPanel } from './AgendaPanel';
 import { ActionItemsPanel } from './ActionItemsPanel';
+import { AiAssistantPanel } from './AiAssistantPanel';
 import {
   MessageSquare,
   FileText,
@@ -13,9 +14,10 @@ import {
   PenTool,
   X,
   Layers,
+  Sparkles,
 } from 'lucide-react';
 
-export type WorkspaceTab = 'chat' | 'files' | 'notes' | 'agenda' | 'actions';
+export type WorkspaceTab = 'chat' | 'files' | 'notes' | 'agenda' | 'actions' | 'ai';
 
 interface WorkspaceDrawerProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ interface WorkspaceDrawerProps {
   defaultTab?: WorkspaceTab;
   meetingId: string;
   roomCode: string;
+  meetingTitle?: string;
   currentUserId: string;
   isHost: boolean;
   onOpenWhiteboard: () => void;
@@ -34,6 +37,7 @@ export const WorkspaceDrawer: React.FC<WorkspaceDrawerProps> = ({
   defaultTab = 'chat',
   meetingId,
   roomCode,
+  meetingTitle,
   currentUserId,
   isHost,
   onOpenWhiteboard,
@@ -44,6 +48,7 @@ export const WorkspaceDrawer: React.FC<WorkspaceDrawerProps> = ({
 
   const tabs = [
     { id: 'chat' as WorkspaceTab, label: 'Chat', icon: MessageSquare },
+    { id: 'ai' as WorkspaceTab, label: 'AI', icon: Sparkles },
     { id: 'notes' as WorkspaceTab, label: 'Notes', icon: FileText },
     { id: 'agenda' as WorkspaceTab, label: 'Agenda', icon: ListOrdered },
     { id: 'actions' as WorkspaceTab, label: 'Tasks', icon: ListTodo },
@@ -117,6 +122,12 @@ export const WorkspaceDrawer: React.FC<WorkspaceDrawerProps> = ({
             meetingId={meetingId}
             roomCode={roomCode}
             currentUserId={currentUserId}
+          />
+        )}
+        {activeTab === 'ai' && (
+          <AiAssistantPanel
+            meetingId={meetingId}
+            meetingTitle={meetingTitle || 'Current Meeting'}
           />
         )}
         {activeTab === 'notes' && (
