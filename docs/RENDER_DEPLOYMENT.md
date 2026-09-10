@@ -46,7 +46,7 @@ git push origin main
 2. Under your Project, copy your connection string (Pooled or Direct).
    Format:
    ```
-   postgresql://user:password@ep-xyz-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+   postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
    ```
 3. **Database Preparation**:
    - For a clean deployment, ensure your target database in Neon is empty or create a dedicated database (e.g., `connectsphere`) in the Neon console.

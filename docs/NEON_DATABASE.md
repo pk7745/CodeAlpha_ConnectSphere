@@ -23,7 +23,7 @@ Neon provides serverless PostgreSQL with:
 5. Select **Connection pooling** (or Direct Connection).
 6. Format of the URL:
    ```
-   postgresql://[user]:[password]@[endpoint].neon.tech/[database]?sslmode=require
+   postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
    ```
 
 ---
@@ -51,7 +51,7 @@ npx prisma migrate deploy
 From your terminal:
 ```bash
 cd server
-DATABASE_URL="postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require" npx prisma migrate deploy --schema=prisma/schema.postgresql.prisma
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require" npx prisma migrate deploy --schema=prisma/schema.postgresql.prisma
 ```
 This applies all unapplied migrations safely without running destructive resets.
 

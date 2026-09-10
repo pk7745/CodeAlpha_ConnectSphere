@@ -70,7 +70,7 @@ ConnectSphere is structured as a clean TypeScript monorepo with two primary work
 | :--- | :--- | :--- | :--- |
 | `NODE_ENV` | **Yes** | Execution mode | `production` |
 | `PORT` | **Yes** (Render injects) | Port the backend listens on | `10000` |
-| `DATABASE_URL` | **Yes** | Neon PostgreSQL connection string | `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require` |
+| `DATABASE_URL` | **Yes** | Neon PostgreSQL connection string | `postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require` |
 | `JWT_SECRET` | **Yes** | Secret for signing auth tokens (min 32 chars) | Random 64-char string |
 | `CLIENT_URL` | **Yes** | Deployed Render Frontend Static Site URL | `https://connectsphere.onrender.com` |
 | `STORAGE_PROVIDER` | **Yes** | Storage mode | `cloud` (uses S3/R2) or `local` (ephemeral dev) |

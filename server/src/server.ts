@@ -37,8 +37,7 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static route for uploads using storageProvider
-app.use('/uploads', express.static(storageProvider.getStorageDir()));
+// Routes (all file access is authenticated via /api/meetings/:meetingId/files)
 
 // Routes
 app.use('/api', healthRoutes);

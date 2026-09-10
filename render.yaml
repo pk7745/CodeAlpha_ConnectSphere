@@ -25,7 +25,7 @@ services:
       - key: DATABASE_URL
         sync: false
         # Paste your Neon PostgreSQL connection string here:
-        # postgresql://user:password@ep-xyz.neon.tech/neondb?sslmode=require
+        # postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
