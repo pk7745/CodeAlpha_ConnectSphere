@@ -9,8 +9,9 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "test": "node test-auth.js",
-    "test:auth": "node test-auth.js"
+    "test": "node test-auth.js && node test-meeting.js",
+    "test:auth": "node test-auth.js",
+    "test:meeting": "node test-meeting.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

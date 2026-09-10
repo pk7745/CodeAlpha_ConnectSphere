@@ -7,6 +7,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { MeetingRoomPage } from './pages/MeetingRoomPage';
 
 export const App: React.FC = () => {
   return (
@@ -22,6 +23,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meeting/:roomCode"
+              element={
+                <ProtectedRoute>
+                  <MeetingRoomPage />
                 </ProtectedRoute>
               }
             />
