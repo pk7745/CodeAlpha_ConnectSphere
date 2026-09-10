@@ -75,6 +75,25 @@ class PresenceManager {
     return undefined;
   }
 
+  // Update media track states
+  public updateMediaState(
+    roomCode: string,
+    userId: string,
+    mediaState: { audioEnabled?: boolean; videoEnabled?: boolean; screenSharing?: boolean }
+  ): RoomParticipant | undefined {
+    const room = this.rooms.get(roomCode);
+    if (!room) return undefined;
+
+    const participant = room.get(userId);
+    if (participant) {
+      if (mediaState.audioEnabled !== undefined) participant.audioEnabled = mediaState.audioEnabled;
+      if (mediaState.videoEnabled !== undefined) participant.videoEnabled = mediaState.videoEnabled;
+      if (mediaState.screenSharing !== undefined) participant.screenSharing = mediaState.screenSharing;
+      return participant;
+    }
+    return undefined;
+  }
+
   // Get all participants currently in room
   public getRoomParticipants(roomCode: string): RoomParticipant[] {
     const room = this.rooms.get(roomCode);

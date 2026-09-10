@@ -83,6 +83,9 @@ export function registerMeetingHandlers(io: TypedServer, socket: TypedSocket): v
         role,
         presence: 'in_meeting',
         joinedAt: new Date().toISOString(),
+        audioEnabled: true,
+        videoEnabled: true,
+        screenSharing: false,
       };
 
       presenceManager.addParticipant(roomCode, participant);
@@ -206,7 +209,145 @@ export function registerMeetingHandlers(io: TypedServer, socket: TypedSocket): v
     }
   });
 
-  // 5. Disconnect Handler
+  // 5. WebRTC: Offer Forwarding
+  socket.on('webrtc:offer', (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      const targetUserId = payload?.targetUserId;
+
+      if (!roomCode || !targetUserId || !payload.sdp) {
+        if (callback) callback({ success: false, error: 'Invalid offer payload' });
+        return;
+      }
+
+      const senderParticipant = presenceManager.getParticipant(roomCode, user.id);
+      if (!senderParticipant) {
+        if (callback) callback({ success: false, error: 'Sender not authorized in this room' });
+        return;
+      }
+
+      const targetParticipant = presenceManager.getParticipant(roomCode, targetUserId);
+      if (!targetParticipant) {
+        if (callback) callback({ success: false, error: 'Target participant not found in room' });
+        return;
+      }
+
+      // Forward offer directly to target socket
+      io.to(targetParticipant.socketId).emit('webrtc:offer', {
+        senderUserId: user.id,
+        senderSocketId: socket.id,
+        sdp: payload.sdp,
+        roomCode,
+      });
+
+      if (callback) callback({ success: true });
+    } catch (error) {
+      console.error('[Socket webrtc:offer] Error:', error);
+      if (callback) callback({ success: false, error: 'Error forwarding offer' });
+    }
+  });
+
+  // 6. WebRTC: Answer Forwarding
+  socket.on('webrtc:answer', (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      const targetUserId = payload?.targetUserId;
+
+      if (!roomCode || !targetUserId || !payload.sdp) {
+        if (callback) callback({ success: false, error: 'Invalid answer payload' });
+        return;
+      }
+
+      const senderParticipant = presenceManager.getParticipant(roomCode, user.id);
+      if (!senderParticipant) {
+        if (callback) callback({ success: false, error: 'Sender not authorized in this room' });
+        return;
+      }
+
+      const targetParticipant = presenceManager.getParticipant(roomCode, targetUserId);
+      if (!targetParticipant) {
+        if (callback) callback({ success: false, error: 'Target participant not found in room' });
+        return;
+      }
+
+      // Forward answer directly to target socket
+      io.to(targetParticipant.socketId).emit('webrtc:answer', {
+        senderUserId: user.id,
+        senderSocketId: socket.id,
+        sdp: payload.sdp,
+        roomCode,
+      });
+
+      if (callback) callback({ success: true });
+    } catch (error) {
+      console.error('[Socket webrtc:answer] Error:', error);
+      if (callback) callback({ success: false, error: 'Error forwarding answer' });
+    }
+  });
+
+  // 7. WebRTC: ICE Candidate Forwarding
+  socket.on('webrtc:ice-candidate', (payload, callback) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      const targetUserId = payload?.targetUserId;
+
+      if (!roomCode || !targetUserId || !payload.candidate) {
+        if (callback) callback({ success: false, error: 'Invalid ICE candidate payload' });
+        return;
+      }
+
+      const senderParticipant = presenceManager.getParticipant(roomCode, user.id);
+      if (!senderParticipant) {
+        if (callback) callback({ success: false, error: 'Sender not authorized in this room' });
+        return;
+      }
+
+      const targetParticipant = presenceManager.getParticipant(roomCode, targetUserId);
+      if (!targetParticipant) {
+        if (callback) callback({ success: false, error: 'Target participant not found in room' });
+        return;
+      }
+
+      // Forward ICE candidate to target socket
+      io.to(targetParticipant.socketId).emit('webrtc:ice-candidate', {
+        senderUserId: user.id,
+        senderSocketId: socket.id,
+        candidate: payload.candidate,
+        roomCode,
+      });
+
+      if (callback) callback({ success: true });
+    } catch (error) {
+      console.error('[Socket webrtc:ice-candidate] Error:', error);
+      if (callback) callback({ success: false, error: 'Error forwarding ICE candidate' });
+    }
+  });
+
+  // 8. Media Track State Changed
+  socket.on('media:state-changed', (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode) {
+        presenceManager.updateMediaState(roomCode, user.id, {
+          audioEnabled: payload.audioEnabled,
+          videoEnabled: payload.videoEnabled,
+          screenSharing: payload.screenSharing,
+        });
+
+        socket.to(roomCode).emit('media:state-changed', {
+          userId: user.id,
+          audioEnabled: payload.audioEnabled,
+          videoEnabled: payload.videoEnabled,
+          screenSharing: payload.screenSharing,
+          roomCode,
+        });
+      }
+    } catch (error) {
+      console.error('[Socket media:state-changed] Error:', error);
+    }
+  });
+
+  // 9. Disconnect Handler
   socket.on('disconnect', async () => {
     try {
       const roomCode = socket.data.currentRoomCode || presenceManager.getSocketRoom(socket.id);
@@ -226,7 +367,7 @@ async function handleUserLeaveRoom(
   roomCode: string
 ): Promise<void> {
   const user = socket.data.user;
-  const removedParticipant = presenceManager.removeParticipant(roomCode, user.id);
+  presenceManager.removeParticipant(roomCode, user.id);
 
   socket.leave(roomCode);
   socket.data.currentRoomCode = undefined;
