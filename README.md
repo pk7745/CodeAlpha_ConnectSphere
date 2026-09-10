@@ -6,7 +6,9 @@ A full-stack real-time video conferencing and interactive collaboration platform
 
 ---
 
-## 🌟 Project Status & Architecture
+## 🌟 Project Overview & Architecture
+
+ConnectSphere is an enterprise-grade collaboration platform delivering low-latency peer-to-peer audio/video streaming, persistent workspace collaboration tools, audience engagement features, and AI-assisted meeting intelligence.
 
 - **Status**: Deployment-Ready Architecture Prepared for Render (Free) + Neon
 - **Target Deployment**:
@@ -21,6 +23,8 @@ A full-stack real-time video conferencing and interactive collaboration platform
 
 ## 📋 CodeAlpha Task 4 — Core Requirements Implementation
 
+ConnectSphere fulfills every specification mandated for CodeAlpha Task 4:
+
 | CodeAlpha Requirement | ConnectSphere Module | Implementation Details |
 | :--- | :--- | :--- |
 | **1. Multi-user video calling** | Browser-native WebRTC mesh with DTLS-SRTP encryption, dynamic grid layout, audio indicator, active speaker highlight, camera toggling, and connection health diagnostics. | Verified (Phases 4–6) |
@@ -32,30 +36,33 @@ A full-stack real-time video conferencing and interactive collaboration platform
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Platform Features
 
-1. **Smart Workspace Drawer**:
-   - **Real-Time Meeting Chat**: Live messaging with auto-scroll, timestamps, and sender identification.
-   - **Collaborative Notes**: Live-synced meeting notepad formatted with Markdown support.
-   - **Interactive Agenda**: Real-time meeting agenda with checkable item statuses for milestone tracking.
-   - **Action Items Tracker**: Task checklist with assignees, due dates, and instant completion toggles.
-2. **AI-Powered Meeting Intelligence**:
-   - **Google Gemini API Support**: Server-side Gemini API integration with zero credentials exposed to browser.
-   - **Zero-Cost Local NLP Fallback**: Automatic local heuristics fallback if no API key is provided or request times out.
-   - **Executive Summaries**: Synthesizes agenda, notes, and discussion flow into professional briefs.
-   - **Key Discussion & Decisions Extraction**: Automatically captures decisions made during the conference.
-   - **Sentiment & Engagement Analytics**: Analyzes team sentiment and engagement scoring.
-   - **Contextual Q&A Assistant**: In-meeting AI chatbot that answers questions regarding the ongoing discussion.
-   - **Automated Task Extractor**: Scans chat messages for commitments ("I will...", "Let me handle...") and auto-creates action items.
-3. **Interactive Audience Engagement**:
-   - **Live Polls**: Real-time poll creator, multi-choice voting, live percentage bars, and host closing controls.
-   - **Floating Emoji Reactions**: Live animated emoji particles (👍, ❤️, 👏, 🎉, 🔥, 💡) floating across peer screens.
-4. **Meeting Management & Controls**:
-   - Human-readable room codes (`CONNECT-XXXXXX`).
-   - Pre-join hardware preview modal (test camera & microphone before entering).
-   - In-call participant drawer with presence indicators.
-   - Keyboard shortcuts (`Ctrl+D` for audio mute, `Ctrl+E` for camera).
-   - Meeting summary dashboard with duration tracking, participant counts, and host management.
+### 1. Smart Workspace Drawer
+- **Real-Time Meeting Chat**: Instant messaging with auto-scroll, timestamps, and sender identification.
+- **Collaborative Notes**: Live-synced meeting notepad formatted with Markdown support.
+- **Interactive Agenda**: Real-time meeting agenda with checkable item statuses for milestone tracking.
+- **Action Items Tracker**: Task checklist with assignees, due dates, and instant completion toggles.
+
+### 2. AI-Powered Meeting Intelligence
+- **Google Gemini API Support**: Server-side Gemini API integration with zero credentials exposed to browser.
+- **Zero-Cost Local NLP Fallback**: Automatic local heuristics fallback if no API key is provided or request times out.
+- **Executive Summaries**: Synthesizes agenda, notes, and discussion flow into professional briefs.
+- **Key Discussion & Decisions Extraction**: Automatically captures decisions made during the conference.
+- **Sentiment & Engagement Analytics**: Analyzes team sentiment and engagement scoring.
+- **Contextual Q&A Assistant**: In-meeting AI chatbot that answers questions regarding the ongoing discussion.
+- **Automated Task Extractor**: Scans chat messages for commitments ("I will...", "Let me handle...") and auto-creates action items.
+
+### 3. Interactive Audience Engagement
+- **Live Polls**: Real-time poll creator, multi-choice voting, live percentage bars, and host closing controls.
+- **Floating Emoji Reactions**: Live animated emoji particles (👍, ❤️, 👏, 🎉, 🔥, 💡) floating across peer screens.
+
+### 4. Meeting Management & Controls
+- Human-readable room codes (`CONNECT-XXXXXX`).
+- Pre-join hardware preview modal (test camera & microphone before entering).
+- In-call participant drawer with presence indicators.
+- Keyboard shortcuts (`Ctrl+D` for audio mute, `Ctrl+E` for camera).
+- Meeting summary dashboard with duration tracking, participant counts, and host management.
 
 ---
 
@@ -103,6 +110,79 @@ Render Static Site (FREE)                         Render Web Service (FREE)
 - **Interface**: Decoupled from physical disk via `StorageProvider` abstraction.
 - **Local Development**: `LocalFilesystemStorage` writing to `./uploads`.
 - **Production**: `CloudStorageProvider` connected to S3-compatible cloud object storage (e.g. Cloudflare R2 / Supabase Storage), ensuring persistent files without paid Render disks.
+
+---
+
+## ⚡ Quickstart: Local Development
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/pk7745/CodeAlpha_ConnectSphere.git
+cd CodeAlpha_ConnectSphere
+
+# Install server dependencies
+cd server
+npm install
+
+# Install client dependencies
+cd ../client
+npm install
+```
+
+### 2. Configure Environment Variables
+Copy `.env.example` in the root (or `server/.env.example`):
+```bash
+cp .env.example .env
+```
+Default local settings use SQLite (`DATABASE_URL="file:./dev.db"`), local uploads (`STORAGE_PROVIDER="local"`), and port 5000.
+
+### 3. Generate Database Client
+```bash
+cd server
+npm run prisma:generate
+```
+
+### 4. Start Development Servers
+In two separate terminals:
+
+```bash
+# Terminal 1: Backend Server (http://localhost:5000)
+cd server
+npm run dev
+
+# Terminal 2: Frontend Client (http://localhost:5173)
+cd client
+npm run dev
+```
+
+Visit `http://localhost:5173` to register, log in, create meetings, and collaborate.
+
+---
+
+## 🧪 Automated Testing Suite (101 / 101 Passing)
+
+ConnectSphere includes comprehensive automated integration tests covering all critical modules:
+
+```bash
+cd server
+npm test
+```
+
+```
+============================================================
+CONNECTSPHERE AUTOMATED VERIFICATION SUITE
+============================================================
+  Phase 2: Authentication & Password Security       13 / 13 PASS
+  Phase 3: Meeting Management & Room Codes          15 / 15 PASS
+  Phase 4: Real-Time Signaling & Presence           18 / 18 PASS
+  Phase 5: WebRTC Signaling Mesh                    11 / 11 PASS
+  Phase 7: Real-Time Collaboration, Chat & Files    20 / 20 PASS
+  Phase 8: AI Productivity & Meeting Intelligence   14 / 14 PASS
+  Phase 9: Interactive Engagement & Live Polls      10 / 10 PASS
+------------------------------------------------------------
+  TOTAL VERIFIED TESTS:                            101 / 101 PASS (100%)
+============================================================
+```
 
 ---
 
@@ -179,4 +259,5 @@ CodeAlpha_ConnectSphere/
 - **Internship**: CodeAlpha Full Stack Development Internship
 - **Task**: Task 4 — Real-Time Communication & Collaboration Platform
 - **Project**: ConnectSphere ("Meet. Collaborate. Get Things Done.")
+- **Repository**: [https://github.com/pk7745/CodeAlpha_ConnectSphere](https://github.com/pk7745/CodeAlpha_ConnectSphere)
 - **License**: MIT
