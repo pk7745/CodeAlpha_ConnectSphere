@@ -20,6 +20,8 @@ model User {
   participants MeetingParticipant[]
   messages     ChatMessage[]
   files        SharedFile[]
+  polls        Poll[]
+  pollVotes    PollVote[]
 
   @@index([email])
 }
@@ -41,6 +43,7 @@ model Meeting {
   agendaItems  AgendaItem[]
   actionItems  ActionItem[]
   notes        MeetingNote?
+  polls        Poll[]
 
   @@index([roomCode])
   @@index([hostId])
@@ -139,4 +142,35 @@ model MeetingNote {
   meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   content   String   @default("")
   updatedAt DateTime @updatedAt
+}
+
+// Interactive Meeting Polls
+model Poll {
+  id        String     @id @default(uuid())
+  meetingId String
+  meeting   Meeting    @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   User       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  question  String
+  options   String     // JSON array of option strings
+  status    String     @default("OPEN") // OPEN, CLOSED
+  createdAt DateTime   @default(now())
+  votes     PollVote[]
+
+  @@index([meetingId])
+  @@index([creatorId])
+}
+
+model PollVote {
+  id        String   @id @default(uuid())
+  pollId    String
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  optionIdx Int
+  createdAt DateTime @default(now())
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+  @@index([userId])
 }

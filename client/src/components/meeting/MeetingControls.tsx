@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Mic,
   MicOff,
@@ -10,6 +10,7 @@ import {
   Square,
   PenTool,
   Layers,
+  Smile,
 } from 'lucide-react';
 
 interface MeetingControlsProps {
@@ -28,6 +29,7 @@ interface MeetingControlsProps {
   onToggleChat?: () => void;
   onToggleWorkspace?: () => void;
   onOpenWhiteboard?: () => void;
+  onSendReaction?: (emoji: string) => void;
   onLeaveMeeting: () => void;
   onEndMeeting?: () => void;
   isEnding?: boolean;
@@ -49,10 +51,12 @@ export const MeetingControls: React.FC<MeetingControlsProps> = ({
   onToggleChat,
   onToggleWorkspace,
   onOpenWhiteboard,
+  onSendReaction,
   onLeaveMeeting,
   onEndMeeting,
   isEnding = false,
 }) => {
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   return (
     <nav
       aria-label="Meeting controls"
@@ -145,6 +149,45 @@ export const MeetingControls: React.FC<MeetingControlsProps> = ({
           <PenTool className="w-4 h-4" />
           <span className="hidden lg:inline">Whiteboard</span>
         </button>
+      )}
+
+      {/* Real-time Reaction Picker Button */}
+      {onSendReaction && (
+        <div className="relative">
+          {showReactionPicker && (
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-2 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-md animate-fadeIn z-30">
+              {['👍', '❤️', '👏', '🎉', '🔥', '💡'].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => {
+                    onSendReaction(emoji);
+                    setShowReactionPicker(false);
+                  }}
+                  className="text-lg hover:scale-125 transition-transform p-1 rounded-lg hover:bg-slate-800 focus:outline-none"
+                  title={`React ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowReactionPicker((prev) => !prev)}
+            aria-label="Send reaction"
+            aria-expanded={showReactionPicker}
+            className={`p-2.5 sm:px-3 sm:py-2.5 rounded-2xl font-medium text-xs flex items-center gap-1.5 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
+              showReactionPicker
+                ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40'
+                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-amber-300'
+            }`}
+            title="Send Reaction"
+          >
+            <Smile className="w-4 h-4" />
+            <span className="hidden lg:inline">React</span>
+          </button>
+        </div>
       )}
 
       {/* Smart Workspace Toggle (Chat, Notes, Agenda, Files) */}

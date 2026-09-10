@@ -524,7 +524,62 @@ export function registerMeetingHandlers(io: TypedServer, socket: TypedSocket): v
     }
   });
 
-  // 16. Disconnect Handler
+  // 16. In-Meeting Reaction Broadcast (Phase 9)
+  socket.on('reaction:send', (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && payload?.emoji) {
+        io.to(roomCode).emit('reaction:received', {
+          emoji: payload.emoji,
+          senderId: user.id,
+          senderName: user.name,
+        });
+      }
+    } catch (error) {
+      console.error('[Socket reaction:send] Error:', error);
+    }
+  });
+
+  // 17. Real-Time Poll Events (Phase 9)
+  socket.on('poll:created', (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && payload?.poll) {
+        io.to(roomCode).emit('poll:created', { poll: payload.poll });
+      }
+    } catch (error) {
+      console.error('[Socket poll:created] Error:', error);
+    }
+  });
+
+  socket.on('poll:voted', (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && payload?.pollId) {
+        io.to(roomCode).emit('poll:voted', {
+          pollId: payload.pollId,
+          optionIdx: payload.optionIdx,
+          userId: user.id,
+          voteCounts: payload.voteCounts,
+        });
+      }
+    } catch (error) {
+      console.error('[Socket poll:voted] Error:', error);
+    }
+  });
+
+  socket.on('poll:closed', (payload) => {
+    try {
+      const roomCode = typeof payload?.roomCode === 'string' ? payload.roomCode.trim().toUpperCase() : socket.data.currentRoomCode;
+      if (roomCode && payload?.pollId) {
+        io.to(roomCode).emit('poll:closed', { pollId: payload.pollId });
+      }
+    } catch (error) {
+      console.error('[Socket poll:closed] Error:', error);
+    }
+  });
+
+  // 18. Disconnect Handler
   socket.on('disconnect', async () => {
     try {
       const roomCode = socket.data.currentRoomCode || presenceManager.getSocketRoom(socket.id);

@@ -9,13 +9,14 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "test": "node test-auth.js && node test-meeting.js && node test-socket.js && node test-webrtc.js && node test-collaboration.js && node test-ai.js",
+    "test": "node test-auth.js && node test-meeting.js && node test-socket.js && node test-webrtc.js && node test-collaboration.js && node test-ai.js && node test-polls.js",
     "test:auth": "node test-auth.js",
     "test:meeting": "node test-meeting.js",
     "test:socket": "node test-socket.js",
     "test:webrtc": "node test-webrtc.js",
     "test:collab": "node test-collaboration.js",
     "test:ai": "node test-ai.js",
+    "test:polls": "node test-polls.js",
     "test:browser": "node test-browser-e2e.js"
   },
   "dependencies": {

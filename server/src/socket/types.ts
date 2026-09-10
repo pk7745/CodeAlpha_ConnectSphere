@@ -79,6 +79,12 @@ export interface ClientToServerEvents {
   'note:update': (payload: { roomCode: string; content: string }, callback?: (res: { success: boolean }) => void) => void;
   'agenda:update': (payload: { roomCode: string }) => void;
   'action:update': (payload: { roomCode: string }) => void;
+
+  // Interactive Engagement & Polls (Phase 9)
+  'reaction:send': (payload: { roomCode?: string; emoji: string }) => void;
+  'poll:created': (payload: { roomCode: string; poll: any }) => void;
+  'poll:voted': (payload: { roomCode: string; pollId: string; optionIdx: number; voteCounts: number[] }) => void;
+  'poll:closed': (payload: { roomCode: string; pollId: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -104,6 +110,12 @@ export interface ServerToClientEvents {
   'action:updated': (payload: { items: any[] }) => void;
   'file:shared': (file: any) => void;
   'file:deleted': (payload: { fileId: string }) => void;
+
+  // Interactive Engagement & Polls (Phase 9)
+  'reaction:received': (payload: { emoji: string; senderId: string; senderName: string }) => void;
+  'poll:created': (payload: { poll: any }) => void;
+  'poll:voted': (payload: { pollId: string; optionIdx: number; userId: string; voteCounts: number[] }) => void;
+  'poll:closed': (payload: { pollId: string }) => void;
 }
 
 export interface InterServerEvents {}

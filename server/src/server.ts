@@ -9,6 +9,7 @@ import meetingRoutes from './routes/meetingRoutes';
 import fileRoutes from './routes/fileRoutes';
 import collaborationRoutes from './routes/collaborationRoutes';
 import aiRoutes from './routes/aiRoutes';
+import pollRoutes from './routes/pollRoutes';
 import { initSocketServer } from './socket';
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/meetings', fileRoutes);
 app.use('/api/meetings', collaborationRoutes);
 app.use('/api/meetings', aiRoutes);
+app.use('/api/meetings', pollRoutes);
 app.use('/api/meetings', meetingRoutes);
 
 // Socket.IO Server Initialization

@@ -5,6 +5,7 @@ import { NotesPanel } from './NotesPanel';
 import { AgendaPanel } from './AgendaPanel';
 import { ActionItemsPanel } from './ActionItemsPanel';
 import { AiAssistantPanel } from './AiAssistantPanel';
+import { PollsPanel } from './PollsPanel';
 import {
   MessageSquare,
   FileText,
@@ -15,9 +16,10 @@ import {
   X,
   Layers,
   Sparkles,
+  Vote,
 } from 'lucide-react';
 
-export type WorkspaceTab = 'chat' | 'files' | 'notes' | 'agenda' | 'actions' | 'ai';
+export type WorkspaceTab = 'chat' | 'files' | 'notes' | 'agenda' | 'actions' | 'ai' | 'polls';
 
 interface WorkspaceDrawerProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export const WorkspaceDrawer: React.FC<WorkspaceDrawerProps> = ({
 
   const tabs = [
     { id: 'chat' as WorkspaceTab, label: 'Chat', icon: MessageSquare },
+    { id: 'polls' as WorkspaceTab, label: 'Polls', icon: Vote },
     { id: 'ai' as WorkspaceTab, label: 'AI', icon: Sparkles },
     { id: 'notes' as WorkspaceTab, label: 'Notes', icon: FileText },
     { id: 'agenda' as WorkspaceTab, label: 'Agenda', icon: ListOrdered },
@@ -122,6 +125,14 @@ export const WorkspaceDrawer: React.FC<WorkspaceDrawerProps> = ({
             meetingId={meetingId}
             roomCode={roomCode}
             currentUserId={currentUserId}
+          />
+        )}
+        {activeTab === 'polls' && (
+          <PollsPanel
+            meetingId={meetingId}
+            roomCode={roomCode}
+            currentUserId={currentUserId}
+            isHost={isHost}
           />
         )}
         {activeTab === 'ai' && (

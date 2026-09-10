@@ -35,3 +35,26 @@
 canvas {
   touch-action: none;
 }
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-20px) scale(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-220px) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-300px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-floatUp {
+  animation: floatUp 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

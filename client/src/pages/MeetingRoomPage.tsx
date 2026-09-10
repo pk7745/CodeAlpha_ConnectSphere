@@ -7,8 +7,10 @@ import { Navbar } from '../components/common/Navbar';
 import { PreJoinModal } from '../components/meeting/PreJoinModal';
 import { VideoGrid, ParticipantMediaData } from '../components/meeting/VideoGrid';
 import { MeetingControls } from '../components/meeting/MeetingControls';
+import { FloatingReactions } from '../components/meeting/FloatingReactions';
 import { WorkspaceDrawer, WorkspaceTab } from '../components/collaboration/WorkspaceDrawer';
 import { WhiteboardModal } from '../components/collaboration/WhiteboardModal';
+import { socketService } from '../services/socketService';
 import {
   Copy,
   Check,
@@ -137,6 +139,16 @@ export const MeetingRoomPage: React.FC = () => {
     }
   };
 
+  const handleSendReaction = (emoji: string) => {
+    if (!roomCode) return;
+    try {
+      const socket = socketService.getSocket();
+      socket.emit('reaction:send', { roomCode, emoji });
+    } catch (err) {
+      console.error('[Reaction] Failed to emit:', err);
+    }
+  };
+
   // Pre-join Modal View
   if (!hasJoinedRoom && !socketError) {
     return (
@@ -191,6 +203,9 @@ export const MeetingRoomPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+      {/* Real-time Floating Reactions Layer */}
+      <FloatingReactions />
+
       <Navbar />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col min-h-0">
@@ -458,6 +473,7 @@ export const MeetingRoomPage: React.FC = () => {
               }}
               onToggleWorkspace={() => setShowWorkspace((prev) => !prev)}
               onOpenWhiteboard={() => setShowWhiteboard(true)}
+              onSendReaction={handleSendReaction}
               onLeaveMeeting={handleLeave}
               onEndMeeting={handleEnd}
               isEnding={isEnding}
