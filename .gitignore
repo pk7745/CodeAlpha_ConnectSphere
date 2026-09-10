@@ -1,0 +1,37 @@
+﻿# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production builds
+dist/
+build/
+out/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Databases & logs
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+logs/
+*.log
+npm-debug.log*
+
+# Uploads & Temp
+server/uploads/*
+!server/uploads/.gitkeep
+temp/
+tmp/
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

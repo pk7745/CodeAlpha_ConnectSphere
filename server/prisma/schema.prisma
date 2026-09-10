@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+model User {
+  id           String               @id @default(uuid())
+  name         String
+  email        String               @unique
+  passwordHash String
+  avatar       String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  meetings     Meeting[]            @relation("HostedMeetings")
+  participants MeetingParticipant[]
+  messages     ChatMessage[]
+  files        SharedFile[]
+}
+
+// Meeting Model
+model Meeting {
+  id           String               @id @default(uuid())
+  roomCode     String               @unique
+  title        String
+  hostId       String
+  host         User                 @relation("HostedMeetings", fields: [hostId], references: [id], onDelete: Cascade)
+  status       String               @default("ACTIVE") // ACTIVE, ENDED
+  createdAt    DateTime             @default(now())
+  endedAt      DateTime?
+  participants MeetingParticipant[]
+  messages     ChatMessage[]
+  files        SharedFile[]
+  whiteboard   WhiteboardState?
+  agendaItems  AgendaItem[]
+  actionItems  ActionItem[]
+  notes        MeetingNote?
+}
+
+// Meeting Participant Model
+model MeetingParticipant {
+  id        String    @id @default(uuid())
+  meetingId String
+  meeting   Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String    @default("PARTICIPANT") // HOST, PARTICIPANT
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  @@unique([meetingId, userId])
+}
+
+// Real-Time Chat Message
+model ChatMessage {
+  id        String   @id @default(uuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+}
+
+// Shared Files
+model SharedFile {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  filename    String
+  fileType    String
+  fileSize    Int
+  storagePath String
+  createdAt   DateTime @default(now())
+}
+
+// Collaborative Whiteboard State
+model WhiteboardState {
+  id        String   @id @default(uuid())
+  meetingId String   @unique
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  stateData String   @default("[]") // JSON string of drawing strokes
+  updatedAt DateTime @updatedAt
+}
+
+// Smart Meeting Workspace: Live Agenda
+model AgendaItem {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  title       String
+  isCompleted Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Smart Meeting Workspace: Action Items
+model ActionItem {
+  id        String   @id @default(uuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  task      String
+  assignee  String   @default("Unassigned")
+  status    String   @default("TODO") // TODO, IN_PROGRESS, DONE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Smart Meeting Workspace: Meeting Notes
+model MeetingNote {
+  id        String   @id @default(uuid())
+  meetingId String   @unique
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+}
