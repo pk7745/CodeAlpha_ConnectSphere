@@ -14,7 +14,7 @@ services:
     plan: free
     region: oregon
     rootDir: server
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -52,7 +52,7 @@ services:
     plan: free
     region: oregon
     rootDir: client
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     staticPublishPath: dist
     routes:
       # SPA fallback routing: Rewrite all non-file requests to /index.html
