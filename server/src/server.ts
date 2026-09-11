@@ -55,7 +55,121 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Routes (all file access is authenticated via /api/meetings/:meetingId/files)
+// Root endpoint: friendly server status response for browser and API clients
+app.get('/', (req: express.Request, res: express.Response) => {
+  if (req.accepts('html')) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConnectSphere API Server</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 36px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 20px;
+    }
+    .info {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: left;
+      font-family: monospace;
+      font-size: 13px;
+      margin-bottom: 20px;
+      color: #cbd5e1;
+    }
+    .info div { margin: 4px 0; }
+    .info a { color: #38bdf8; text-decoration: none; }
+    .btn {
+      display: inline-block;
+      background: #6366f1;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .btn:hover { background: #4f46e5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge"><span class="dot"></span>API Online &amp; Ready</div>
+    <h1>ConnectSphere API</h1>
+    <p>&ldquo;Meet. Collaborate. Get Things Done.&rdquo;<br />Backend API &amp; Real-Time WebRTC signaling service is live.</p>
+    <div class="info">
+      <div><strong>Status:</strong> 200 OK</div>
+      <div><strong>Health:</strong> <a href="/api/health">/api/health</a></div>
+      <div><strong>Storage:</strong> ${config.storageProvider}</div>
+      <div><strong>Environment:</strong> ${config.nodeEnv}</div>
+    </div>
+    <a class="btn" href="/api/health">Check Health Status</a>
+  </div>
+</body>
+</html>`);
+  }
+
+  return res.status(200).json({
+    name: 'ConnectSphere API Server',
+    status: 'online',
+    tagline: 'Meet. Collaborate. Get Things Done.',
+    version: '1.0.0',
+    environment: config.nodeEnv,
+    storage: config.storageProvider,
+    uptime: process.uptime(),
+    health: '/api/health',
+  });
+});
 
 // Routes
 app.use('/api', healthRoutes);
