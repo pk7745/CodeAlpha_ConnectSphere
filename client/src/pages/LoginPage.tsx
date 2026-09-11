@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ApiError } from '../services/api';
 import { Video, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 
@@ -39,11 +38,7 @@ export const LoginPage: React.FC = () => {
       await login(email.trim(), password);
       navigate(from, { replace: true });
     } catch (err: any) {
-      if (err instanceof ApiError) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage('An unexpected error occurred. Please check your network connection.');
-      }
+      setErrorMessage(err?.message || 'An unexpected error occurred. Please check your network connection.');
     } finally {
       setIsLoading(false);
     }

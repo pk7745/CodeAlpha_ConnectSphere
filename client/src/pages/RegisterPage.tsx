@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ApiError } from '../services/api';
 import { Video, User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 
@@ -49,15 +48,11 @@ export const RegisterPage: React.FC = () => {
       await register(name.trim(), email.trim(), password);
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      if (err instanceof ApiError) {
-        if (err.details) {
-          const firstField = Object.keys(err.details)[0];
-          setErrorMessage(err.details[firstField][0] || err.message);
-        } else {
-          setErrorMessage(err.message);
-        }
+      if (err?.details && typeof err.details === 'object') {
+        const firstField = Object.keys(err.details)[0];
+        setErrorMessage(err.details[firstField][0] || err.message || 'Failed to create account.');
       } else {
-        setErrorMessage('Failed to create account. Please check your network connection.');
+        setErrorMessage(err?.message || 'Failed to create account. Please check your network connection.');
       }
     } finally {
       setIsLoading(false);

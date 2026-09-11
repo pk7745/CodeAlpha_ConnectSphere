@@ -49,11 +49,11 @@ export async function register(req: Request, res: Response): Promise<void> {
       user: safeUser,
       token,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AuthController.register] Error:', error);
     res.status(500).json({
       error: 'Internal Server Error',
-      message: 'Failed to create user account',
+      message: error?.message || 'Failed to create user account',
     });
   }
 }
@@ -83,8 +83,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const isMatch = await comparePassword(password, user.passwordHash);
-    if (!isMatch) {
+    const isPasswordValid = await comparePassword(password, user.passwordHash);
+    if (!isPasswordValid) {
       res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid email or password',
@@ -100,11 +100,11 @@ export async function login(req: Request, res: Response): Promise<void> {
       user: safeUser,
       token,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AuthController.login] Error:', error);
     res.status(500).json({
       error: 'Internal Server Error',
-      message: 'Failed to process login request',
+      message: error?.message || 'Failed to process login request',
     });
   }
 }
