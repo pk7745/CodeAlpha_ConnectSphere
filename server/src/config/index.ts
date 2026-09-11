@@ -26,11 +26,16 @@ export function validateConfig(): void {
     const missing: string[] = [];
     if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
     if (!process.env.JWT_SECRET) missing.push('JWT_SECRET');
-    if (!process.env.CLIENT_URL) missing.push('CLIENT_URL');
 
     if (missing.length > 0) {
       throw new Error(
         `[ConnectSphere Configuration Error] Missing required production environment variables: ${missing.join(', ')}`
+      );
+    }
+
+    if (!process.env.CLIENT_URL) {
+      console.warn(
+        '[ConnectSphere Notice] CLIENT_URL is not set. Permitting dynamic origin matching. Set CLIENT_URL to your frontend static site URL in Render settings for strict CORS locking.'
       );
     }
 

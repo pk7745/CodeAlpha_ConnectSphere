@@ -20,14 +20,18 @@ export type AppSocketServer = SocketIOServer<
 let ioInstance: AppSocketServer | null = null;
 
 export function initSocketServer(server: http.Server): AppSocketServer {
-  const allowedOrigins =
-    config.nodeEnv === 'production'
-      ? [config.clientUrl]
-      : [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'].filter(Boolean);
+  const configuredOrigins = config.clientUrl
+    ? config.clientUrl.split(',').map((u) => u.trim()).filter(Boolean)
+    : [];
+
+  const socketCorsOrigin =
+    configuredOrigins.length > 0 && !configuredOrigins.includes('*')
+      ? configuredOrigins
+      : (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => callback(null, true);
 
   const io: AppSocketServer = new SocketIOServer(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: socketCorsOrigin as any,
       methods: ['GET', 'POST'],
       credentials: true,
     },

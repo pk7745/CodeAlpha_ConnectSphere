@@ -20,17 +20,35 @@ validateConfig();
 const app = express();
 const server = http.createServer(app);
 
-// Allowed origins for CORS
-const allowedOrigins =
-  config.nodeEnv === 'production'
-    ? [config.clientUrl]
-    : [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'].filter(Boolean);
+// Configured origins for CORS
+const configuredOrigins = config.clientUrl
+  ? config.clientUrl.split(',').map((u) => u.trim()).filter(Boolean)
+  : [];
+
+const corsOriginHandler = (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void
+) => {
+  // Allow non-browser requests (health checks, server-to-server, curl)
+  if (!origin) return callback(null, true);
+
+  // If specific CLIENT_URL is configured, enforce strictly
+  if (configuredOrigins.length > 0 && !configuredOrigins.includes('*')) {
+    if (configuredOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS policy violation: origin ${origin} is not allowed`));
+  }
+
+  // If CLIENT_URL is not configured yet (initial deployment), allow request origin
+  return callback(null, true);
+};
 
 // Security & Middleware
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: corsOriginHandler,
     credentials: true,
   })
 );
